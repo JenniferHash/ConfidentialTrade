@@ -118,10 +118,15 @@ contract AnonymousAuth is SepoliaConfig {
         // Clean up pending verification
     }
 
-    function getUserRegistration(address user) external view returns (bool, uint256) {
+    function getUserRegistration(address user) external view returns (UserRegistration memory) {
         UserRegistration memory reg = userRegistrations[user];
-        return (reg.isRegistered, reg.registrationTime);
+        return reg;
     }
+
+    // function getUserEncryptedAddress(address user) external view returns (bytes32) {
+    //     if (!userRegistrations[user].isRegistered) revert UserNotRegistered();
+    //     return FHE.toBytes32(userRegistrations[user].encryptedAddress);
+    // }
 
     function getNFTVerification(address user, address nft) external view returns (bool) {
         return nftVerifications[user][nft];

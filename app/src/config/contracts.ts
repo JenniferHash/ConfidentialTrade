@@ -1,7 +1,7 @@
 // Contract addresses - Deployed on Sepolia testnet
 export const CONTRACT_ADDRESSES = {
-  ANONYMOUS_AUTH: '0x251E596994bf85992341Ff1bbd6E9643c6671fa0',
-  AIRDROP: '0xC5cfd4262F96dADb9fCD894074bB273Ac0CAc898',
+  ANONYMOUS_AUTH: '0x8E93aD33bf22CCF3e8e45C87Ff07685D920eFb34',
+  AIRDROP: '0x5109E225594b779063B4A268f4E48ed3b366694f',
 } as const;
 
 // Sepolia configuration for FHEVM
@@ -40,8 +40,15 @@ export const ANONYMOUS_AUTH_ABI = [
     inputs: [{ name: 'user', type: 'address' }],
     name: 'getUserRegistration',
     outputs: [
-      { name: '', type: 'bool' },
-      { name: '', type: 'uint256' }
+      {
+        components: [
+          { name: 'encryptedAddress', type: 'bytes32' },
+          { name: 'isRegistered', type: 'bool' },
+          { name: 'registrationTime', type: 'uint256' }
+        ],
+        name: '',
+        type: 'tuple'
+      }
     ],
     stateMutability: 'view',
     type: 'function'

@@ -3,6 +3,8 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagm
 import { toast } from 'react-hot-toast';
 import { CONTRACT_ADDRESSES, ANONYMOUS_AUTH_ABI } from '../config/contracts';
 import { useFhevmInstance } from '../hooks/useFhevmInstance';
+import { useRegistrationStatus } from '../hooks/useRegistrationStatus';
+import { useDecryptShadowAddress } from '../hooks/useDecryptShadowAddress';
 import { createEncryptionUtil } from '../utils/encryption';
 
 export const AddressRegistration = () => {
@@ -11,6 +13,8 @@ export const AddressRegistration = () => {
   
   const { address, isConnected } = useAccount();
   const { instance, isLoading: fhevmLoading, error: fhevmError } = useFhevmInstance();
+  const { isRegistered, registrationTimestamp, encryptedAddress, isLoading: registrationLoading, refetch: refetchRegistration } = useRegistrationStatus();
+  const { decryptedAddress, isDecrypting, decryptError, decryptAddress } = useDecryptShadowAddress(encryptedAddress);
   
   const { writeContract, data: hash, isPending, error: writeError } = useWriteContract();
 
@@ -38,6 +42,8 @@ export const AddressRegistration = () => {
       toast.success('Shadow address registered successfully!');
       setShadowAddress('');
       setIsEncrypting(false);
+      // Refetch registration status after successful registration
+      refetchRegistration();
     }
     
     if (isError && hash) {
@@ -159,6 +165,13 @@ export const AddressRegistration = () => {
     }
   };
 
+  // Format timestamp to readable date
+  const formatRegistrationDate = (timestamp: bigint) => {
+    if (timestamp === BigInt(0)) return 'Unknown';
+    const date = new Date(Number(timestamp) * 1000);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  };
+
   if (!isConnected) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -168,6 +181,115 @@ export const AddressRegistration = () => {
     );
   }
 
+  // Show loading state while checking registration
+  if (registrationLoading && isConnected) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Shadow Address Status</h2>
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking registration status...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show registered status if user is already registered
+  if (isRegistered) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-green-800">Shadow Address Registered</h2>
+          <div className="flex items-center text-green-600">
+            <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="text-sm font-medium">Active</span>
+          </div>
+        </div>
+        
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-medium text-green-800 mb-1">Registration Status</p>
+              <p className="text-green-700">Your shadow address has been successfully registered and encrypted on-chain.</p>
+            </div>
+            
+            <div>
+              <p className="text-sm font-medium text-green-800 mb-1">Registered On</p>
+              <p className="text-green-700">{formatRegistrationDate(registrationTimestamp)}</p>
+            </div>
+            
+            <div>
+              <p className="text-sm font-medium text-green-800 mb-1">Bound Shadow Address(Encrypted)</p>
+              {encryptedAddress ? (
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-green-700 font-mono text-xs break-all bg-green-100 p-2 rounded">
+                      {encryptedAddress}
+                    </p>
+                  </div>
+                  
+                  {decryptedAddress ? (
+                    <div>
+                      <p className="text-xs text-green-600 mb-1">Decrypted Address:</p>
+                      <p className="text-green-700 font-mono text-sm break-all bg-green-100 p-2 rounded">
+                        {decryptedAddress}
+                      </p>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={decryptAddress}
+                      disabled={isDecrypting}
+                      className="flex items-center justify-center w-full bg-green-600 text-white text-sm py-2 px-4 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isDecrypting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Decrypting...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 16.5H9v1.5a1.5 1.5 0 01-1.5 1.5H6v1.5a1.5 1.5 0 01-1.5 1.5H3a1.5 1.5 0 01-1.5-1.5v-2.25A1.5 1.5 0 013 15.5l4.878-4.878A6 6 0 0118 8a6 6 0 00-3-5.197z" />
+                          </svg>
+                          Decrypt Shadow Address
+                        </>
+                      )}
+                    </button>
+                  )}
+                  
+                  {decryptError && (
+                    <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
+                      {decryptError}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-green-700 text-sm">Loading encrypted address...</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-blue-800 mb-2">What's Next?</h3>
+          <ul className="text-sm text-blue-700 space-y-1">
+            <li>• Your encrypted shadow address can now be used for anonymous NFT verification</li>
+            <li>• You can participate in airdrops without exposing your shadow address</li>
+            <li>• The system will verify NFT ownership using your encrypted address</li>
+          </ul>
+        </div>
+
+        <div className="mt-4 text-xs text-gray-500">
+          <p className="font-semibold">Privacy Protection:</p>
+          <p>Your shadow address remains encrypted on-chain and can only be accessed by authorized contracts through FHE decryption.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show registration form if not registered
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-2xl font-bold text-gray-800 mb-4">Register Shadow Address</h2>

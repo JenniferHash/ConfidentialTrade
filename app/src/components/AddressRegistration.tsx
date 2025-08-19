@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { toast } from 'react-hot-toast';
 import { CONTRACT_ADDRESSES, ANONYMOUS_AUTH_ABI } from '../config/contracts';
@@ -11,6 +11,8 @@ export const AddressRegistration = () => {
   
   const { address, isConnected } = useAccount();
   const { instance, isLoading: fhevmLoading, error: fhevmError } = useFhevmInstance();
+  
+  const { writeContract, data: hash, isPending, error: writeError } = useWriteContract();
 
   // Debug logging
   console.log('Address Registration Debug:', {
@@ -19,14 +21,38 @@ export const AddressRegistration = () => {
     instance: !!instance,
     fhevmLoading,
     fhevmError,
-    shadowAddress
+    shadowAddress,
+    writeError,
+    isPending,
+    hash
   });
   
-  const { writeContract, data: hash, isPending } = useWriteContract();
-  
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+  const { isLoading: isConfirming, isSuccess, isError } = useWaitForTransactionReceipt({
     hash,
   });
+
+  // Handle transaction status changes
+  useEffect(() => {
+    if (isSuccess) {
+      toast.dismiss();
+      toast.success('Shadow address registered successfully!');
+      setShadowAddress('');
+      setIsEncrypting(false);
+    }
+    
+    if (isError && hash) {
+      toast.dismiss();
+      toast.error('Transaction failed. Please try again.');
+      setIsEncrypting(false);
+    }
+    
+    if (writeError) {
+      console.error('writeContract error:', writeError);
+      toast.dismiss();
+      toast.error(`Contract write failed: ${writeError.message}`);
+      setIsEncrypting(false);
+    }
+  }, [isSuccess, isError, hash, writeError]);
 
   const handleRegister = async () => {
     // More specific error checking
@@ -57,6 +83,7 @@ export const AddressRegistration = () => {
       
       // Create encryption utility
       const encryptionUtil = createEncryptionUtil(instance);
+      console.log("handleRegister 1");
       
       // Encrypt the shadow address
       const encrypted = await encryptionUtil.encryptAddress(
@@ -64,33 +91,73 @@ export const AddressRegistration = () => {
         CONTRACT_ADDRESSES.ANONYMOUS_AUTH,
         address
       );
-      
+      console.log("handleRegister 2");
       toast.dismiss();
       toast.loading('Registering encrypted address...');
       
       // Call the contract
-      writeContract({
-        address: CONTRACT_ADDRESSES.ANONYMOUS_AUTH as `0x${string}`,
-        abi: ANONYMOUS_AUTH_ABI,
+      console.log("writeContract config:", {
+        address: CONTRACT_ADDRESSES.ANONYMOUS_AUTH,
         functionName: 'registerEncryptedAddress',
         args: [encrypted.handle, encrypted.proof],
+        argsLength: [encrypted.handle, encrypted.proof].length,
+        handleType: typeof encrypted.handle,
+        proofType: typeof encrypted.proof,
+        handleValue: encrypted.handle,
+        proofValue: encrypted.proof
       });
       
+      // Ensure proper formatting of arguments
+      const handle = encrypted.handle;
+      const proof = encrypted.proof;
+      
+      // Convert to proper hex format if needed
+      let formattedHandle: string;
+      let formattedProof: string;
+      
+      // Handle different data types from Zama SDK
+      if (typeof handle === 'string') {
+        formattedHandle = handle.startsWith('0x') ? handle : `0x${handle}`;
+      } else if (handle instanceof Uint8Array) {
+        formattedHandle = `0x${Array.from(handle).map(b => b.toString(16).padStart(2, '0')).join('')}`;
+      } else {
+        formattedHandle = `0x${handle.toString()}`;
+      }
+      
+      if (typeof proof === 'string') {
+        formattedProof = proof.startsWith('0x') ? proof : `0x${proof}`;
+      } else if (proof instanceof Uint8Array) {
+        formattedProof = `0x${Array.from(proof).map(b => b.toString(16).padStart(2, '0')).join('')}`;
+      } else {
+        formattedProof = `0x${proof.toString()}`;
+      }
+      
+      console.log("Formatted args:", {
+        formattedHandle,
+        formattedProof,
+        formattedHandleType: typeof formattedHandle,
+        formattedProofType: typeof formattedProof
+      });
+      
+      try {
+        writeContract({
+          address: CONTRACT_ADDRESSES.ANONYMOUS_AUTH as `0x${string}`,
+          abi: ANONYMOUS_AUTH_ABI,
+          functionName: 'registerEncryptedAddress',
+          args: [formattedHandle as `0x${string}`, formattedProof as `0x${string}`],
+        });
+        console.log("handleRegister 3 - writeContract called successfully");
+      } catch (writeError) {
+        console.error("writeContract error:", writeError);
+        throw writeError;
+      }
     } catch (error) {
       console.error('Registration failed:', error);
       toast.dismiss();
       toast.error('Failed to register address. Please try again.');
-    } finally {
       setIsEncrypting(false);
     }
   };
-
-  // Handle transaction success
-  if (isSuccess) {
-    toast.dismiss();
-    toast.success('Shadow address registered successfully!');
-    setShadowAddress('');
-  }
 
   if (!isConnected) {
     return (

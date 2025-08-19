@@ -18,18 +18,18 @@ export const AddressRegistration = () => {
   
   const { writeContract, data: hash, isPending, error: writeError } = useWriteContract();
 
-  // Debug logging
-  console.log('Address Registration Debug:', {
-    address,
-    isConnected,
-    instance: !!instance,
-    fhevmLoading,
-    fhevmError,
-    shadowAddress,
-    writeError,
-    isPending,
-    hash
-  });
+  // Debug logging (can be removed after testing)
+  // console.log('Address Registration Component Debug:', {
+  //   address,
+  //   isConnected,
+  //   isRegistered,
+  //   registrationTimestamp: registrationTimestamp.toString(),
+  //   encryptedAddress,
+  //   registrationLoading,
+  //   instance: !!instance,
+  //   fhevmLoading,
+  //   fhevmError
+  // });
   
   const { isLoading: isConfirming, isSuccess, isError } = useWaitForTransactionReceipt({
     hash,
@@ -195,7 +195,7 @@ export const AddressRegistration = () => {
   }
 
   // Show registered status if user is already registered
-  if (isRegistered) {
+  if (isConnected && !registrationLoading && isRegistered) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex items-center justify-between mb-4">

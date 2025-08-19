@@ -20,10 +20,14 @@ export const useRegistrationStatus = () => {
   });
 
   // registrationData is now a UserRegistration struct
-  const userReg = registrationData as { encryptedAddress: string; isRegistered: boolean; registrationTime: bigint } | undefined;
+  const userReg = registrationData as { encryptedAddress: `0x${string}`; isRegistered: boolean; registrationTime: bigint } | undefined;
   const isRegistered = userReg ? userReg.isRegistered : false;
   const registrationTimestamp = userReg ? userReg.registrationTime : BigInt(0);
-  const encryptedAddress = userReg ? userReg.encryptedAddress : null;
+  
+  // encryptedAddress is already a bytes32 hex string
+  const encryptedAddress = userReg && userReg.encryptedAddress !== '0x0000000000000000000000000000000000000000000000000000000000000000' 
+    ? userReg.encryptedAddress 
+    : null;
 
   return {
     isRegistered,

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAccount, useReadContract } from 'wagmi';
 import { CONTRACT_ADDRESSES, ANONYMOUS_AUTH_ABI, AIRDROP_ABI } from '../config/contracts';
 import { AddressRegistration } from './AddressRegistration';
@@ -22,6 +22,10 @@ export const Dashboard = () => {
       enabled: !!address
     }
   });
+  useEffect(()=>{
+    console.log("dashboard:",registrationData);
+    
+  },[registrationData])
 
   // Get total airdrops for user
   const { data: totalAirdrops } = useReadContract({
@@ -34,9 +38,11 @@ export const Dashboard = () => {
     }
   });
 
-  const isRegistered = registrationData?.[0] ?? false;
-  const registrationTime = registrationData?.[1] ?? 0n;
+  const isRegistered = registrationData?.isRegistered
+  const registrationTime = registrationData?.registrationTime
 
+  console.log("dashboard:",isRegistered);
+  
   const tabs = [
     { id: 'register', label: 'Register', description: 'Register your shadow address' },
     { id: 'verify', label: 'Verify NFTs', description: 'Verify NFT ownership' },

@@ -1,233 +1,223 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {FHE, euint64, euint8, euint256, ebool, externalEuint64, externalEuint8, externalEuint256} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, eaddress, externalEaddress} from "@fhevm/solidity/lib/FHE.sol";
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 
-/// @title Anonymous Authentication System
-/// @notice This contract provides anonymous registration and login functionality using FHE
-/// @dev Users can register with encrypted credentials and login without revealing their real address
+interface IERC721 {
+    function balanceOf(address owner) external view returns (uint256 balance);
+    function ownerOf(uint256 tokenId) external view returns (address owner);
+}
+
 contract AnonymousAuth is SepoliaConfig {
-    struct EncryptedUser {
-        euint256 encryptedUsername;    // Encrypted username hash
-        euint256 encryptedPassword;    // Encrypted password hash  
-        euint64 registrationTime;     // Encrypted registration timestamp
-        ebool isActive;               // Encrypted active status
+    struct UserRegistration {
+        eaddress encryptedAddress;
+        bool isRegistered;
+        uint256 registrationTime;
     }
-    
-    struct UserSession {
-        address proxyAddress;         // The proxy address used for this session
-        uint256 sessionExpiry;       // Session expiration timestamp
-        bool isValid;                // Session validity status
+
+    struct NFTVerificationRecord {
+        address nftContract;
+        address verifiedAddress;
+        bool hasNFT;
+        uint256 verificationTime;
     }
+
+    struct AirdropRecord {
+        address tokenContract;
+        uint256 amount;
+        bool claimed;
+        uint256 recordTime;
+    }
+
+    struct PendingVerification {
+        address user;
+        address nftContract;
+        uint256 timestamp;
+    }
+
+    mapping(address => UserRegistration) public userRegistrations;
+    mapping(bytes32 => NFTVerificationRecord) public nftVerifications;
+    mapping(address => mapping(address => AirdropRecord)) public airdropRecords;
+    mapping(bytes32 => PendingVerification) private pendingVerifications;
+    mapping(uint256 => bytes32) private requestToVerificationId;
     
-    // Mapping from real user address to encrypted user data
-    mapping(address => EncryptedUser) private users;
-    
-    // Mapping from proxy address to real user address  
-    mapping(address => address) private proxyToReal;
-    
-    // Mapping from real address to current proxy address
-    mapping(address => address) private realToProxy;
-    
-    // Mapping from proxy address to session data
-    mapping(address => UserSession) private sessions;
-    
-    // Mapping to track registered users
-    mapping(address => bool) public isRegistered;
-    
-    // Events
-    event UserRegistered(address indexed realAddress, address indexed proxyAddress);
-    event UserLoggedIn(address indexed proxyAddress, uint256 sessionExpiry);
-    event UserLoggedOut(address indexed proxyAddress);
-    event ProxyAddressChanged(address indexed realAddress, address indexed oldProxy, address indexed newProxy);
-    
-    // Session duration (24 hours)
-    uint256 public constant SESSION_DURATION = 24 * 60 * 60;
-    
-    /// @notice Register a new user with encrypted credentials
-    /// @param encryptedUsernameHash External encrypted username hash
-    /// @param encryptedPasswordHash External encrypted password hash
-    /// @param proxyAddress The proxy address to use for this user
-    /// @param inputProof Proof for encrypted inputs
-    function register(
-        externalEuint256 encryptedUsernameHash,
-        externalEuint256 encryptedPasswordHash,
-        address proxyAddress,
-        bytes calldata inputProof
+    address public owner;
+    mapping(address => bool) public authorizedNFTContracts;
+    mapping(address => bool) public authorizedTokenContracts;
+
+    event UserRegistered(address indexed user, uint256 timestamp);
+    event NFTVerificationRequested(address indexed user, address indexed nftContract, bytes32 verificationId);
+    event NFTVerificationCompleted(bytes32 indexed verificationId, bool hasNFT, address verifiedAddress);
+    event AirdropRecorded(address indexed user, address indexed tokenContract, uint256 amount);
+    event AirdropClaimed(address indexed user, address indexed tokenContract, uint256 amount);
+
+    error OnlyOwner();
+    error UserAlreadyRegistered();
+    error UserNotRegistered();
+    error NFTContractNotAuthorized();
+    error InvalidVerificationRequest();
+    error NoAirdropAvailable();
+    error AirdropAlreadyClaimed();
+    error TokenContractNotAuthorized();
+
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert OnlyOwner();
+        _;
+    }
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    function registerEncryptedAddress(
+        externalEaddress encryptedAddress,
+        bytes calldata addressProof
     ) external {
-        require(!isRegistered[msg.sender], "User already registered");
-        require(proxyAddress != address(0), "Invalid proxy address");
-        require(proxyAddress != msg.sender, "Proxy cannot be same as real address");
-        require(proxyToReal[proxyAddress] == address(0), "Proxy address already in use");
+        if (userRegistrations[msg.sender].isRegistered) revert UserAlreadyRegistered();
         
-        // Convert external encrypted inputs
-        euint256 username = FHE.fromExternal(encryptedUsernameHash, inputProof);
-        euint256 password = FHE.fromExternal(encryptedPasswordHash, inputProof);
-        euint64 timestamp = FHE.asEuint64(block.timestamp);
-        ebool active = FHE.asEbool(true);
+        eaddress encryptedAddr = FHE.fromExternal(encryptedAddress, addressProof);
         
-        // Store encrypted user data
-        users[msg.sender] = EncryptedUser({
-            encryptedUsername: username,
-            encryptedPassword: password,
-            registrationTime: timestamp,
-            isActive: active
+        userRegistrations[msg.sender] = UserRegistration({
+            encryptedAddress: encryptedAddr,
+            isRegistered: true,
+            registrationTime: block.timestamp
+        });
+
+        FHE.allowThis(encryptedAddr);
+        FHE.allow(encryptedAddr, msg.sender);
+
+        emit UserRegistered(msg.sender, block.timestamp);
+    }
+
+    function authorizeNFTContract(address nftContract, bool authorized) external onlyOwner {
+        authorizedNFTContracts[nftContract] = authorized;
+    }
+
+    function authorizeTokenContract(address tokenContract, bool authorized) external onlyOwner {
+        authorizedTokenContracts[tokenContract] = authorized;
+    }
+
+    function requestNFTVerification(address nftContract) external returns (bytes32) {
+        if (!userRegistrations[msg.sender].isRegistered) revert UserNotRegistered();
+        if (!authorizedNFTContracts[nftContract]) revert NFTContractNotAuthorized();
+        
+        bytes32 verificationId = keccak256(abi.encodePacked(msg.sender, nftContract, block.timestamp));
+        
+        // Store pending verification data
+        pendingVerifications[verificationId] = PendingVerification({
+            user: msg.sender,
+            nftContract: nftContract,
+            timestamp: block.timestamp
         });
         
-        // Set up address mappings
-        proxyToReal[proxyAddress] = msg.sender;
-        realToProxy[msg.sender] = proxyAddress;
-        isRegistered[msg.sender] = true;
+        // Convert encrypted address to handle and request decryption
+        eaddress encryptedAddr = userRegistrations[msg.sender].encryptedAddress;
+        bytes32[] memory handles = new bytes32[](1);
+        handles[0] = FHE.toBytes32(encryptedAddr);
         
-        // Grant ACL permissions
-        FHE.allowThis(username);
-        FHE.allowThis(password);
-        FHE.allowThis(timestamp);
-        FHE.allowThis(active);
-        FHE.allow(username, msg.sender);
-        FHE.allow(password, msg.sender);
-        FHE.allow(timestamp, msg.sender);
-        FHE.allow(active, msg.sender);
+        uint256 requestId = FHE.requestDecryption(handles, this.completeNFTVerification.selector);
+        requestToVerificationId[requestId] = verificationId;
         
-        emit UserRegistered(msg.sender, proxyAddress);
+        emit NFTVerificationRequested(msg.sender, nftContract, verificationId);
+        
+        return verificationId;
     }
-    
-    /// @notice Login with encrypted credentials through proxy address
-    /// @param encryptedUsernameHash External encrypted username hash
-    /// @param encryptedPasswordHash External encrypted password hash  
-    /// @param inputProof Proof for encrypted inputs
-    function login(
-        externalEuint256 encryptedUsernameHash,
-        externalEuint256 encryptedPasswordHash,
-        bytes calldata inputProof
+
+    function completeNFTVerification(
+        uint256 requestId,
+        address decryptedAddress,
+        bytes[] calldata signatures
     ) external {
-        address realAddress = proxyToReal[msg.sender];
-        require(realAddress != address(0), "Proxy address not registered");
-        require(isRegistered[realAddress], "User not registered");
+        // Verify signatures to prevent fake results
+        FHE.checkSignatures(requestId, signatures);
         
-        // Convert external encrypted inputs
-        euint256 inputUsername = FHE.fromExternal(encryptedUsernameHash, inputProof);
-        euint256 inputPassword = FHE.fromExternal(encryptedPasswordHash, inputProof);
+        bytes32 verificationId = requestToVerificationId[requestId];
+        PendingVerification memory pending = pendingVerifications[verificationId];
         
-        // Get stored user data
-        EncryptedUser storage user = users[realAddress];
+        if (pending.user == address(0)) revert InvalidVerificationRequest();
         
-        // Verify credentials using FHE comparison
-        ebool usernameMatch = FHE.eq(user.encryptedUsername, inputUsername);
-        ebool passwordMatch = FHE.eq(user.encryptedPassword, inputPassword);
-        ebool isUserActive = user.isActive;
+        // Check if decrypted address owns the NFT
+        IERC721 nft = IERC721(pending.nftContract);
+        uint256 balance = nft.balanceOf(decryptedAddress);
+        bool hasNFT = balance > 0;
         
-        // All conditions must be true for successful login
-        ebool canLogin = FHE.and(FHE.and(usernameMatch, passwordMatch), isUserActive);
-        
-        // Create session (conditional execution)
-        uint256 sessionExpiry = block.timestamp + SESSION_DURATION;
-        
-        // Store session data (will be valid only if canLogin is true)
-        sessions[msg.sender] = UserSession({
-            proxyAddress: msg.sender,
-            sessionExpiry: sessionExpiry,
-            isValid: true  // This will be conditionally valid based on FHE computation
+        nftVerifications[verificationId] = NFTVerificationRecord({
+            nftContract: pending.nftContract,
+            verifiedAddress: decryptedAddress,
+            hasNFT: hasNFT,
+            verificationTime: block.timestamp
         });
         
-        // Grant temporary ACL permissions for this session
-        FHE.allowTransient(canLogin, msg.sender);
+        // Clean up pending verification
+        delete pendingVerifications[verificationId];
+        delete requestToVerificationId[requestId];
         
-        emit UserLoggedIn(msg.sender, sessionExpiry);
-    }
-    
-    /// @notice Logout and invalidate current session
-    function logout() external {
-        require(sessions[msg.sender].isValid, "No active session");
-        
-        // Invalidate session
-        sessions[msg.sender].isValid = false;
-        sessions[msg.sender].sessionExpiry = 0;
-        
-        emit UserLoggedOut(msg.sender);
-    }
-    
-    /// @notice Change proxy address for a user
-    /// @param newProxyAddress New proxy address to use
-    function changeProxyAddress(address newProxyAddress) external {
-        require(isRegistered[msg.sender], "User not registered");
-        require(newProxyAddress != address(0), "Invalid proxy address");
-        require(newProxyAddress != msg.sender, "Proxy cannot be same as real address");
-        require(proxyToReal[newProxyAddress] == address(0), "New proxy address already in use");
-        
-        address oldProxy = realToProxy[msg.sender];
-        
-        // Clear old mapping
-        if (oldProxy != address(0)) {
-            delete proxyToReal[oldProxy];
-            delete sessions[oldProxy];
+        // Record airdrop if eligible
+        if (hasNFT) {
+            _recordAirdropEligibility(pending.user, pending.nftContract);
         }
         
-        // Set new mapping
-        proxyToReal[newProxyAddress] = msg.sender;
-        realToProxy[msg.sender] = newProxyAddress;
+        emit NFTVerificationCompleted(verificationId, hasNFT, decryptedAddress);
+    }
+
+    function _recordAirdropEligibility(address user, address) internal {
+        // Simple implementation: fixed airdrop for any authorized NFT
+        uint256 airdropAmount = 1000 * 10**18; // 1000 tokens with 18 decimals
+        address tokenContract = getDefaultTokenContract();
         
-        emit ProxyAddressChanged(msg.sender, oldProxy, newProxyAddress);
-    }
-    
-    /// @notice Check if a session is valid
-    /// @param proxyAddress The proxy address to check
-    /// @return bool indicating if session is valid
-    function isSessionValid(address proxyAddress) external view returns (bool) {
-        UserSession memory session = sessions[proxyAddress];
-        return session.isValid && block.timestamp <= session.sessionExpiry;
-    }
-    
-    /// @notice Get proxy address for a real address
-    /// @param realAddress The real user address
-    /// @return address The current proxy address
-    function getProxyAddress(address realAddress) external view returns (address) {
-        require(isRegistered[realAddress], "User not registered");
-        return realToProxy[realAddress];
-    }
-    
-    /// @notice Get real address from proxy address (only accessible by the proxy itself)
-    /// @return address The real user address
-    function getRealAddress() external view returns (address) {
-        return proxyToReal[msg.sender];
-    }
-    
-    /// @notice Get encrypted user data (only accessible by the user themselves)
-    /// @return EncryptedUser The encrypted user data
-    function getEncryptedUserData() external view returns (EncryptedUser memory) {
-        require(isRegistered[msg.sender], "User not registered");
-        return users[msg.sender];
-    }
-    
-    /// @notice Get session information for current proxy
-    /// @return UserSession The session data
-    function getSessionInfo() external view returns (UserSession memory) {
-        return sessions[msg.sender];
-    }
-    
-    /// @notice Deactivate user account
-    function deactivateAccount() external {
-        require(isRegistered[msg.sender], "User not registered");
-        
-        users[msg.sender].isActive = FHE.asEbool(false);
-        FHE.allowThis(users[msg.sender].isActive);
-        FHE.allow(users[msg.sender].isActive, msg.sender);
-        
-        // Invalidate any active sessions
-        address proxyAddr = realToProxy[msg.sender];
-        if (proxyAddr != address(0) && sessions[proxyAddr].isValid) {
-            sessions[proxyAddr].isValid = false;
-            sessions[proxyAddr].sessionExpiry = 0;
+        if (tokenContract != address(0) && airdropAmount > 0) {
+            airdropRecords[user][tokenContract] = AirdropRecord({
+                tokenContract: tokenContract,
+                amount: airdropAmount,
+                claimed: false,
+                recordTime: block.timestamp
+            });
+            
+            emit AirdropRecorded(user, tokenContract, airdropAmount);
         }
     }
-    
-    /// @notice Reactivate user account
-    function reactivateAccount() external {
-        require(isRegistered[msg.sender], "User not registered");
+
+    function getAirdropAmount(address nftContract) public view returns (uint256) {
+        // 简单实现：每个授权的NFT合约对应1000个代币的空投
+        if (authorizedNFTContracts[nftContract]) {
+            return 1000 * 10**18; // 假设18位小数
+        }
+        return 0;
+    }
+
+    function getDefaultTokenContract() public view returns (address) {
+        // Simplified implementation: return a default token contract
+        // In production, this would be configurable
+        return address(0); // To be set by owner
+    }
+
+    function checkAirdropEligibility(address user, address tokenContract) external view returns (bool, uint256, bool) {
+        AirdropRecord memory record = airdropRecords[user][tokenContract];
+        return (record.amount > 0, record.amount, record.claimed);
+    }
+
+    function claimAirdrop(address tokenContract) external {
+        AirdropRecord storage record = airdropRecords[msg.sender][tokenContract];
+        if (record.amount == 0) revert NoAirdropAvailable();
+        if (record.claimed) revert AirdropAlreadyClaimed();
+        if (!authorizedTokenContracts[tokenContract]) revert TokenContractNotAuthorized();
         
-        users[msg.sender].isActive = FHE.asEbool(true);
-        FHE.allowThis(users[msg.sender].isActive);
-        FHE.allow(users[msg.sender].isActive, msg.sender);
+        record.claimed = true;
+        
+        // 注意：这里只是记录了领取状态，实际的代币转移需要在外部实现
+        // 或者集成代币合约的转移功能
+        
+        emit AirdropClaimed(msg.sender, tokenContract, record.amount);
+    }
+
+    function getUserRegistration(address user) external view returns (bool, uint256) {
+        UserRegistration memory reg = userRegistrations[user];
+        return (reg.isRegistered, reg.registrationTime);
+    }
+
+    function getNFTVerification(bytes32 verificationId) external view returns (address, address, bool, uint256) {
+        NFTVerificationRecord memory record = nftVerifications[verificationId];
+        return (record.nftContract, record.verifiedAddress, record.hasNFT, record.verificationTime);
     }
 }

@@ -21,10 +21,6 @@ import type { TaskArguments } from "hardhat/types";
  *
  *   npx hardhat --network localhost anonymous-auth:register:encrypted-address --address 0x1234567890123456789012345678901234567890
  *
- * 4. Authorize NFT contract
- *
- *   npx hardhat --network localhost anonymous-auth:authorize-nft --nft-contract 0x1234567890123456789012345678901234567890 --authorized true
- *
  * 5. Request NFT verification
  *
  *   npx hardhat --network localhost anonymous-auth:request-verification --nft-contract 0x1234567890123456789012345678901234567890
@@ -90,45 +86,6 @@ task("anonymous-auth:register:encrypted-address", "Register an encrypted address
     console.log(`tx: ${tx.hash} status=${receipt?.status}`);
 
     console.log(`Successfully registered encrypted address for ${signers[0].address}`);
-  });
-
-/**
- * Example:
- *   - npx hardhat --network localhost anonymous-auth:authorize-nft --nft-contract 0x1234567890123456789012345678901234567890 --authorized true
- *   - npx hardhat --network sepolia anonymous-auth:authorize-nft --nft-contract 0x1234567890123456789012345678901234567890 --authorized false
- */
-task("anonymous-auth:authorize-nft", "Authorize or deauthorize an NFT contract (owner only)")
-  .addOptionalParam("contract", "Optionally specify the AnonymousAuth contract address")
-  .addParam("nftContract", "The NFT contract address to authorize/deauthorize", undefined, undefined, true)
-  .addParam("authorized", "Whether to authorize (true) or deauthorize (false) the NFT contract")
-  .setAction(async function (taskArguments: TaskArguments, hre) {
-    const { ethers, deployments } = hre;
-
-    const nftContract = taskArguments.nftContract;
-    if (!ethers.isAddress(nftContract)) {
-      throw new Error(`Invalid NFT contract address: ${nftContract}`);
-    }
-
-    const authorized = taskArguments.authorized === "true";
-
-    const AnonymousAuthDeployment = taskArguments.contract
-      ? { address: taskArguments.contract }
-      : await deployments.get("AnonymousAuth");
-    console.log(`AnonymousAuth: ${AnonymousAuthDeployment.address}`);
-
-    const signers = await ethers.getSigners();
-
-    const anonymousAuthContract = await ethers.getContractAt("AnonymousAuth", AnonymousAuthDeployment.address);
-
-    const tx = await anonymousAuthContract
-      .connect(signers[0])
-      .authorizeNFTContract(nftContract, authorized);
-    console.log(`Wait for tx: ${tx.hash}...`);
-
-    const receipt = await tx.wait();
-    console.log(`tx: ${tx.hash} status=${receipt?.status}`);
-
-    console.log(`Successfully ${authorized ? 'authorized' : 'deauthorized'} NFT contract: ${nftContract}`);
   });
 
 /**

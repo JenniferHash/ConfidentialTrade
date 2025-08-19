@@ -34,7 +34,6 @@ contract AnonymousAuth is SepoliaConfig {
     mapping(uint256 => PendingVerification) private pendingVerifications;
 
     address public owner;
-    mapping(address => bool) public authorizedNFTContracts;
 
     event UserRegistered(address indexed user, uint256 timestamp);
     event NFTVerificationRequested(address indexed user, address indexed nftContract, bytes32 verificationId);
@@ -75,13 +74,9 @@ contract AnonymousAuth is SepoliaConfig {
         emit UserRegistered(msg.sender, block.timestamp);
     }
 
-    function authorizeNFTContract(address nftContract, bool authorized) external onlyOwner {
-        authorizedNFTContracts[nftContract] = authorized;
-    }
-
     function requestNFTVerification(address nftContract) external returns (uint256) {
         if (!userRegistrations[msg.sender].isRegistered) revert UserNotRegistered();
-        if (!authorizedNFTContracts[nftContract]) revert NFTContractNotAuthorized();
+        // if (!authorizedNFTContracts[nftContract]) revert NFTContractNotAuthorized();
 
         // Convert encrypted address to handle and request decryption
         eaddress encryptedAddr = userRegistrations[msg.sender].encryptedAddress;

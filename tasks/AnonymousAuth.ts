@@ -1,170 +1,286 @@
-import { task, types } from "hardhat/config";
+import { FhevmType } from "@fhevm/hardhat-plugin";
+import { task } from "hardhat/config";
 import type { TaskArguments } from "hardhat/types";
 
-// Helper function to get contract address
-async function getAnonymousAuthContract(ethers: any, deployments: any, contractAddress?: string) {
-  let address = contractAddress;
-  if (!address) {
-    const deployment = await deployments.get("AnonymousAuth");
-    address = deployment.address;
-    console.log("Using deployed AnonymousAuth at:", address);
-  }
-  return await ethers.getContractAt("AnonymousAuth", address);
-}
+/**
+ * AnonymousAuth Tasks
+ * ===================
+ *
+ * Tutorial: Deploy and Interact Locally (--network localhost)
+ * ===========================================================
+ *
+ * 1. From a separate terminal window:
+ *
+ *   npx hardhat node
+ *
+ * 2. Deploy the AnonymousAuth contract
+ *
+ *   npx hardhat --network localhost deploy:AnonymousAuth
+ *
+ * 3. Register an encrypted address
+ *
+ *   npx hardhat --network localhost anonymous-auth:register:encrypted-address --address 0x1234567890123456789012345678901234567890
+ *
+ * 4. Authorize NFT contract
+ *
+ *   npx hardhat --network localhost anonymous-auth:authorize-nft --nft-contract 0x1234567890123456789012345678901234567890 --authorized true
+ *
+ * 5. Request NFT verification
+ *
+ *   npx hardhat --network localhost anonymous-auth:request-verification --nft-contract 0x1234567890123456789012345678901234567890
+ *
+ * 6. Check registration status
+ *
+ *   npx hardhat --network localhost anonymous-auth:get-registration --user 0x1234567890123456789012345678901234567890
+ *
+ */
 
-task("anonymous-auth:register", "Register encrypted address for anonymous authentication")
-  .addParam("targetAddress", "The target address to encrypt and register")
-  .addOptionalParam("address", "Optionally specify the AnonymousAuth contract address")
-  .setAction(async function (taskArguments: TaskArguments, { ethers, deployments, fhevm }) {
-    const { targetAddress } = taskArguments;
-    
+/**
+ * Example:
+ *   - npx hardhat --network localhost anonymous-auth:address
+ *   - npx hardhat --network sepolia anonymous-auth:address
+ */
+task("anonymous-auth:address", "Prints the AnonymousAuth contract address").setAction(async function (_taskArguments: TaskArguments, hre) {
+  const { deployments } = hre;
+
+  const anonymousAuth = await deployments.get("AnonymousAuth");
+
+  console.log("AnonymousAuth address is " + anonymousAuth.address);
+});
+
+/**
+ * Example:
+ *   - npx hardhat --network localhost anonymous-auth:register:encrypted-address --address 0x1234567890123456789012345678901234567890
+ *   - npx hardhat --network sepolia anonymous-auth:register:encrypted-address --address 0x1234567890123456789012345678901234567890
+ */
+task("anonymous-auth:register:encrypted-address", "Register an encrypted address for anonymous operations")
+  .addOptionalParam("contract", "Optionally specify the AnonymousAuth contract address")
+  .addParam("address", "The address to encrypt and register")
+  .setAction(async function (taskArguments: TaskArguments, hre) {
+    const { ethers, deployments, fhevm } = hre;
+
+    const addressToRegister = taskArguments.address;
+    if (!ethers.isAddress(addressToRegister)) {
+      throw new Error(`Invalid address: ${addressToRegister}`);
+    }
+
     await fhevm.initializeCLIApi();
-    
-    const [signer] = await ethers.getSigners();
-    const anonymousAuth = await getAnonymousAuthContract(ethers, deployments, taskArguments.address);
-    
-    console.log("Registering encrypted address for:", signer.address);
-    console.log("Target address to encrypt:", targetAddress);
-    
-    // Encrypt the target address using Zama FHE
+
+    const AnonymousAuthDeployment = taskArguments.contract
+      ? { address: taskArguments.contract }
+      : await deployments.get("AnonymousAuth");
+    console.log(`AnonymousAuth: ${AnonymousAuthDeployment.address}`);
+
+    const signers = await ethers.getSigners();
+
+    const anonymousAuthContract = await ethers.getContractAt("AnonymousAuth", AnonymousAuthDeployment.address);
+
+    // Encrypt the address
     const encryptedInput = await fhevm
-      .createEncryptedInput(anonymousAuth.target, signer.address)
-      .addAddress(targetAddress)
+      .createEncryptedInput(AnonymousAuthDeployment.address, signers[0].address)
+      .addAddress(addressToRegister)
       .encrypt();
-    
-    const tx = await anonymousAuth
-      .connect(signer)
+
+    const tx = await anonymousAuthContract
+      .connect(signers[0])
       .registerEncryptedAddress(encryptedInput.handles[0], encryptedInput.inputProof);
-    
-    console.log(`Wait for tx:${tx.hash}...`);
+    console.log(`Wait for tx: ${tx.hash}...`);
+
     const receipt = await tx.wait();
-    console.log(`tx:${tx.hash} status=${receipt?.status}`);
-    
-    console.log("Registration successful!");
+    console.log(`tx: ${tx.hash} status=${receipt?.status}`);
+
+    console.log(`Successfully registered encrypted address for ${signers[0].address}`);
   });
 
-task("anonymous-auth:authorize-nft", "Authorize NFT contract for verification")
-  .addParam("nft", "The NFT contract address to authorize")
-  .addOptionalParam("authorized", "Whether to authorize (true) or deauthorize (false)", true, types.boolean)
-  .setAction(async function (taskArguments: TaskArguments, { ethers, deployments }) {
-    const { nft, authorized } = taskArguments;
-    
-    const [signer] = await ethers.getSigners();
-    const anonymousAuth = await getAnonymousAuthContract(ethers, deployments);
-    
-    console.log(`${authorized ? 'Authorizing' : 'Deauthorizing'} NFT contract:`, nft);
-    
-    const tx = await anonymousAuth.connect(signer).authorizeNFTContract(nft, authorized);
-    await tx.wait();
-    
-    console.log("Authorization update successful! Transaction hash:", tx.hash);
-  });
+/**
+ * Example:
+ *   - npx hardhat --network localhost anonymous-auth:authorize-nft --nft-contract 0x1234567890123456789012345678901234567890 --authorized true
+ *   - npx hardhat --network sepolia anonymous-auth:authorize-nft --nft-contract 0x1234567890123456789012345678901234567890 --authorized false
+ */
+task("anonymous-auth:authorize-nft", "Authorize or deauthorize an NFT contract (owner only)")
+  .addOptionalParam("contract", "Optionally specify the AnonymousAuth contract address")
+  .addParam("nftContract", "The NFT contract address to authorize/deauthorize", undefined, undefined, true)
+  .addParam("authorized", "Whether to authorize (true) or deauthorize (false) the NFT contract")
+  .setAction(async function (taskArguments: TaskArguments, hre) {
+    const { ethers, deployments } = hre;
 
-task("anonymous-auth:authorize-token", "Authorize token contract for airdrops")
-  .addParam("token", "The token contract address to authorize")
-  .addOptionalParam("authorized", "Whether to authorize (true) or deauthorize (false)", true, types.boolean)
-  .setAction(async function (taskArguments: TaskArguments, { ethers, deployments }) {
-    const { token, authorized } = taskArguments;
-    
-    const [signer] = await ethers.getSigners();
-    const anonymousAuth = await getAnonymousAuthContract(ethers, deployments);
-    
-    console.log(`${authorized ? 'Authorizing' : 'Deauthorizing'} token contract:`, token);
-    
-    const tx = await anonymousAuth.connect(signer).authorizeTokenContract(token, authorized);
-    await tx.wait();
-    
-    console.log("Authorization update successful! Transaction hash:", tx.hash);
-  });
+    const nftContract = taskArguments.nftContract;
+    if (!ethers.isAddress(nftContract)) {
+      throw new Error(`Invalid NFT contract address: ${nftContract}`);
+    }
 
-task("anonymous-auth:verify-nft", "Request NFT verification for anonymous address")
-  .addParam("nft", "The NFT contract address to verify")
-  .setAction(async function (taskArguments: TaskArguments, { ethers, deployments }) {
-    const { nft } = taskArguments;
-    
-    const [signer] = await ethers.getSigners();
-    const anonymousAuth = await getAnonymousAuthContract(ethers, deployments);
-    
-    console.log("Requesting NFT verification for contract:", nft);
-    
-    const tx = await anonymousAuth.connect(signer).requestNFTVerification(nft);
+    const authorized = taskArguments.authorized === "true";
+
+    const AnonymousAuthDeployment = taskArguments.contract
+      ? { address: taskArguments.contract }
+      : await deployments.get("AnonymousAuth");
+    console.log(`AnonymousAuth: ${AnonymousAuthDeployment.address}`);
+
+    const signers = await ethers.getSigners();
+
+    const anonymousAuthContract = await ethers.getContractAt("AnonymousAuth", AnonymousAuthDeployment.address);
+
+    const tx = await anonymousAuthContract
+      .connect(signers[0])
+      .authorizeNFTContract(nftContract, authorized);
+    console.log(`Wait for tx: ${tx.hash}...`);
+
     const receipt = await tx.wait();
-    if(!receipt)return
-    // 从事件中获取验证ID  
-    const events = await anonymousAuth.queryFilter(
-      anonymousAuth.filters.NFTVerificationRequested(),
-      receipt.blockNumber
-    );
-    const verificationId = events[0]?.args?.verificationId;
-    
-    console.log("NFT verification requested! Transaction hash:", tx.hash);
-    console.log("Verification ID:", verificationId);
+    console.log(`tx: ${tx.hash} status=${receipt?.status}`);
+
+    console.log(`Successfully ${authorized ? 'authorized' : 'deauthorized'} NFT contract: ${nftContract}`);
   });
 
-task("anonymous-auth:check-airdrop", "Check airdrop eligibility")
-  .addParam("user", "The user address to check")
-  .addParam("token", "The token contract address")
-  .setAction(async function (taskArguments: TaskArguments, { ethers, deployments }) {
-    const { user, token } = taskArguments;
-    
-    const anonymousAuth = await getAnonymousAuthContract(ethers, deployments);
-    
-    console.log("Checking airdrop eligibility for user:", user);
-    console.log("Token contract:", token);
-    
-    const [hasAirdrop, amount, claimed] = await anonymousAuth.checkAirdropEligibility(user, token);
-    
-    console.log("Has airdrop:", hasAirdrop);
-    console.log("Amount:", ethers.formatEther(amount));
-    console.log("Claimed:", claimed);
+/**
+ * Example:
+ *   - npx hardhat --network localhost anonymous-auth:request-verification --nft-contract 0x1234567890123456789012345678901234567890
+ *   - npx hardhat --network sepolia anonymous-auth:request-verification --nft-contract 0x1234567890123456789012345678901234567890
+ */
+task("anonymous-auth:request-verification", "Request NFT verification for registered user")
+  .addOptionalParam("contract", "Optionally specify the AnonymousAuth contract address")
+  .addParam("nftContract", "The NFT contract address to verify", undefined, undefined, true)
+  .setAction(async function (taskArguments: TaskArguments, hre) {
+    const { ethers, deployments } = hre;
+
+    const nftContract = taskArguments.nftContract;
+    if (!ethers.isAddress(nftContract)) {
+      throw new Error(`Invalid NFT contract address: ${nftContract}`);
+    }
+
+    const AnonymousAuthDeployment = taskArguments.contract
+      ? { address: taskArguments.contract }
+      : await deployments.get("AnonymousAuth");
+    console.log(`AnonymousAuth: ${AnonymousAuthDeployment.address}`);
+
+    const signers = await ethers.getSigners();
+
+    const anonymousAuthContract = await ethers.getContractAt("AnonymousAuth", AnonymousAuthDeployment.address);
+
+    const tx = await anonymousAuthContract
+      .connect(signers[0])
+      .requestNFTVerification(nftContract);
+    console.log(`Wait for tx: ${tx.hash}...`);
+
+    const receipt = await tx.wait();
+    console.log(`tx: ${tx.hash} status=${receipt?.status}`);
+
+    // Extract request ID from events
+    const events = receipt?.logs || [];
+    for (const event of events) {
+      try {
+        const parsedEvent = anonymousAuthContract.interface.parseLog(event);
+        if (parsedEvent?.name === "NFTVerificationRequested") {
+          console.log(`Verification request ID: ${parsedEvent.args.verificationId}`);
+        }
+      } catch (e) {
+        // Ignore parsing errors for non-matching events
+      }
+    }
+
+    console.log(`Successfully requested NFT verification for contract: ${nftContract}`);
   });
 
-task("anonymous-auth:claim-airdrop", "Claim available airdrop")
-  .addParam("token", "The token contract address")
-  .setAction(async function (taskArguments: TaskArguments, { ethers, deployments }) {
-    const { token } = taskArguments;
-    
-    const [signer] = await ethers.getSigners();
-    const anonymousAuth = await getAnonymousAuthContract(ethers, deployments);
-    
-    console.log("Claiming airdrop for token:", token);
-    
-    const tx = await anonymousAuth.connect(signer).claimAirdrop(token);
-    await tx.wait();
-    
-    console.log("Airdrop claimed! Transaction hash:", tx.hash);
-  });
+/**
+ * Example:
+ *   - npx hardhat --network localhost anonymous-auth:get-registration --user 0x1234567890123456789012345678901234567890
+ *   - npx hardhat --network sepolia anonymous-auth:get-registration --user 0x1234567890123456789012345678901234567890
+ */
+task("anonymous-auth:get-registration", "Get user registration status")
+  .addOptionalParam("contract", "Optionally specify the AnonymousAuth contract address")
+  .addOptionalParam("user", "The user address to check (defaults to first signer)")
+  .setAction(async function (taskArguments: TaskArguments, hre) {
+    const { ethers, deployments } = hre;
 
-task("anonymous-auth:get-user-registration", "Get user registration info")
-  .addParam("user", "The user address to check")
-  .setAction(async function (taskArguments: TaskArguments, { ethers, deployments }) {
-    const { user } = taskArguments;
-    
-    const anonymousAuth = await getAnonymousAuthContract(ethers, deployments);
-    
-    const [isRegistered, registrationTime] = await anonymousAuth.getUserRegistration(user);
-    
-    console.log("User:", user);
-    console.log("Is registered:", isRegistered);
+    const AnonymousAuthDeployment = taskArguments.contract
+      ? { address: taskArguments.contract }
+      : await deployments.get("AnonymousAuth");
+    console.log(`AnonymousAuth: ${AnonymousAuthDeployment.address}`);
+
+    const signers = await ethers.getSigners();
+    const userAddress = taskArguments.user || signers[0].address;
+
+    if (!ethers.isAddress(userAddress)) {
+      throw new Error(`Invalid user address: ${userAddress}`);
+    }
+
+    const anonymousAuthContract = await ethers.getContractAt("AnonymousAuth", AnonymousAuthDeployment.address);
+
+    const [isRegistered, registrationTime] = await anonymousAuthContract.getUserRegistration(userAddress);
+
+    console.log(`User: ${userAddress}`);
+    console.log(`Is Registered: ${isRegistered}`);
     if (isRegistered) {
-      console.log("Registration time:", new Date(Number(registrationTime) * 1000).toLocaleString());
+      const date = new Date(Number(registrationTime) * 1000);
+      console.log(`Registration Time: ${date.toISOString()}`);
     }
   });
 
-task("anonymous-auth:get-verification", "Get NFT verification info")
-  .addParam("verificationId", "The verification ID to check")
-  .setAction(async function (taskArguments: TaskArguments, { ethers, deployments }) {
-    const { verificationId } = taskArguments;
-    
-    const anonymousAuth = await getAnonymousAuthContract(ethers, deployments);
-    
-    const [nftContract, verifiedAddress, hasNFT, verificationTime] = await anonymousAuth.getNFTVerification(verificationId);
-    
-    console.log("Verification ID:", verificationId);
-    console.log("NFT contract:", nftContract);
-    console.log("Verified address:", verifiedAddress);
-    console.log("Has NFT:", hasNFT);
-    if (verificationTime > 0) {
-      console.log("Verification time:", new Date(Number(verificationTime) * 1000).toLocaleString());
+/**
+ * Example:
+ *   - npx hardhat --network localhost anonymous-auth:get-verification --user 0x1234567890123456789012345678901234567890 --nft-contract 0x1234567890123456789012345678901234567890
+ *   - npx hardhat --network sepolia anonymous-auth:get-verification --user 0x1234567890123456789012345678901234567890 --nft-contract 0x1234567890123456789012345678901234567890
+ */
+task("anonymous-auth:get-verification", "Get NFT verification status for a user")
+  .addOptionalParam("contract", "Optionally specify the AnonymousAuth contract address")
+  .addOptionalParam("user", "The user address to check (defaults to first signer)")
+  .addParam("nftContract", "The NFT contract address to check", undefined, undefined, true)
+  .setAction(async function (taskArguments: TaskArguments, hre) {
+    const { ethers, deployments } = hre;
+
+    const nftContract = taskArguments.nftContract;
+    if (!ethers.isAddress(nftContract)) {
+      throw new Error(`Invalid NFT contract address: ${nftContract}`);
     }
+
+    const AnonymousAuthDeployment = taskArguments.contract
+      ? { address: taskArguments.contract }
+      : await deployments.get("AnonymousAuth");
+    console.log(`AnonymousAuth: ${AnonymousAuthDeployment.address}`);
+
+    const signers = await ethers.getSigners();
+    const userAddress = taskArguments.user || signers[0].address;
+
+    if (!ethers.isAddress(userAddress)) {
+      throw new Error(`Invalid user address: ${userAddress}`);
+    }
+
+    const anonymousAuthContract = await ethers.getContractAt("AnonymousAuth", AnonymousAuthDeployment.address);
+
+    const hasNFT = await anonymousAuthContract.getNFTVerification(userAddress, nftContract);
+
+    console.log(`User: ${userAddress}`);
+    console.log(`NFT Contract: ${nftContract}`);
+    console.log(`Has NFT: ${hasNFT}`);
+  });
+
+/**
+ * Example:
+ *   - npx hardhat --network localhost anonymous-auth:get-pending-verification --request-id 12345
+ *   - npx hardhat --network sepolia anonymous-auth:get-pending-verification --request-id 12345
+ */
+task("anonymous-auth:get-pending-verification", "Get pending verification details by request ID")
+  .addOptionalParam("contract", "Optionally specify the AnonymousAuth contract address")
+  .addParam("requestId", "The verification request ID")
+  .setAction(async function (taskArguments: TaskArguments, hre) {
+    const { ethers, deployments } = hre;
+
+    const requestId = parseInt(taskArguments.requestId);
+    if (!Number.isInteger(requestId)) {
+      throw new Error(`Invalid request ID: ${taskArguments.requestId}`);
+    }
+
+    const AnonymousAuthDeployment = taskArguments.contract
+      ? { address: taskArguments.contract }
+      : await deployments.get("AnonymousAuth");
+    console.log(`AnonymousAuth: ${AnonymousAuthDeployment.address}`);
+
+    const anonymousAuthContract = await ethers.getContractAt("AnonymousAuth", AnonymousAuthDeployment.address);
+
+    const pending = await anonymousAuthContract.getpendingVerification(requestId);
+
+    console.log(`Request ID: ${requestId}`);
+    console.log(`User: ${pending.user}`);
+    console.log(`NFT Contract: ${pending.nftContract}`);
+    console.log(`Timestamp: ${new Date(Number(pending.timestamp) * 1000).toISOString()}`);
+    console.log(`Complete: ${pending.complete}`);
   });

@@ -11,6 +11,13 @@ export default defineConfig({
       process: "process/browser",
       stream: "stream-browserify",
       util: "util",
+      buffer: "buffer",
     },
+    fallback: {
+      'tfhe_bg.wasm': false,
+    },
+  },
+  optimizeDeps: {
+    include: ['buffer'],
   },
 })

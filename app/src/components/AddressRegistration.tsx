@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { ANONYMOUS_AUTH_ABI } from '../types/contracts'
 import { useContractAddresses } from '../hooks/useContracts'
+import { useZama } from '../hooks/useZama'
+import { encryptAddress } from '../utils/zama'
 import { isAddress } from 'viem'
 import { Shield, Loader2 } from 'lucide-react'
 
@@ -9,6 +11,7 @@ export const AddressRegistration = () => {
   const { address } = useAccount()
   console.log('Connected address:', address) // Use address to avoid unused warning
   const contractAddresses = useContractAddresses()
+  const { isReady: zamaReady, isLoading: zamaLoading, error: zamaError } = useZama()
   const [shadowAddress, setShadowAddress] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   
@@ -24,23 +27,36 @@ export const AddressRegistration = () => {
       return
     }
 
+    if (!zamaReady) {
+      alert('Zama加密未就绪，请稍后再试 / Zama encryption not ready, please try again later')
+      return
+    }
+
+    if (!address) {
+      alert('请先连接钱包 / Please connect your wallet first')
+      return
+    }
+
     setIsLoading(true)
     
     try {
-      // For now, we'll use a placeholder for FHE encryption
-      // In a real implementation, you'd use fhevmjs to encrypt the address
-      const encryptedAddress = ('0x' + '00'.repeat(32)) as `0x${string}` // Placeholder encrypted data
-      const addressProof = ('0x' + '00'.repeat(32)) as `0x${string}` // Placeholder proof
+      // Use real Zama encryption
+      const { encryptedAddress, inputProof } = await encryptAddress(
+        shadowAddress,
+        contractAddresses.ANONYMOUS_AUTH,
+        address
+      )
       
       writeContract({
         address: contractAddresses.ANONYMOUS_AUTH,
         abi: ANONYMOUS_AUTH_ABI,
         functionName: 'registerEncryptedAddress',
-        args: [encryptedAddress, addressProof],
+        args: [encryptedAddress, inputProof],
       })
     } catch (error) {
       console.error('Registration failed:', error)
-      alert('注册失败 / Registration failed')
+      const errorMessage = error instanceof Error ? error.message : '注册失败 / Registration failed'
+      alert(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -75,12 +91,20 @@ export const AddressRegistration = () => {
         
         <button
           onClick={handleRegister}
-          disabled={!shadowAddress || isLoading || isConfirming}
+          disabled={!shadowAddress || isLoading || isConfirming || !zamaReady}
           className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-md transition-colors flex items-center justify-center gap-2"
         >
-          {(isLoading || isConfirming) && <Loader2 className="w-4 h-4 animate-spin" />}
-          {isLoading ? '加密中...' : isConfirming ? '确认中...' : '注册加密地址'}
+          {(isLoading || isConfirming || zamaLoading) && <Loader2 className="w-4 h-4 animate-spin" />}
+          {zamaLoading ? '初始化加密...' : isLoading ? '加密中...' : isConfirming ? '确认中...' : '注册加密地址'}
         </button>
+        
+        {zamaError && (
+          <div className="p-3 bg-red-900/20 border border-red-700 rounded-md">
+            <p className="text-red-400 text-sm">
+              ❌ 加密初始化失败 / Encryption initialization failed: {zamaError}
+            </p>
+          </div>
+        )}
         
         {isSuccess && (
           <div className="p-3 bg-green-900/20 border border-green-700 rounded-md">

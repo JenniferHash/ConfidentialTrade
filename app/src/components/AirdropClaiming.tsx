@@ -165,14 +165,14 @@ export const AirdropClaiming = () => {
               </p>
             </div>
             
-            {airdropRecord && airdropRecord[1] > 0n && (
+            {airdropRecord && airdropRecord.amount > 0n && (
               <div className="bg-gray-900 p-4 rounded-md">
                 <h4 className="text-sm font-medium text-gray-300 mb-2">空投记录详情 / Airdrop Record Details:</h4>
                 <div className="space-y-1 text-sm text-gray-400">
-                  <p>NFT 合约 / NFT Contract: {airdropRecord[0]}</p>
-                  <p>空投数量 / Amount: {formatEther(airdropRecord[1])} 代币</p>
-                  <p>是否已领取 / Claimed: {airdropRecord[2] ? '✅ 是' : '❌ 否'}</p>
-                  <p>记录时间 / Timestamp: {new Date(Number(airdropRecord[3]) * 1000).toLocaleString()}</p>
+                  <p>NFT 合约 / NFT Contract: {airdropRecord.nftContract}</p>
+                  <p>空投数量 / Amount: {formatEther(airdropRecord.amount)} 代币</p>
+                  <p>是否已领取 / Claimed: {airdropRecord.claimed ? '✅ 是' : '❌ 否'}</p>
+                  <p>记录时间 / Timestamp: {new Date(Number(airdropRecord.timestamp) * 1000).toLocaleString()}</p>
                 </div>
               </div>
             )}

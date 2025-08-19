@@ -7,6 +7,7 @@ import { Search, Loader2, CheckCircle, XCircle } from 'lucide-react'
 
 export const NFTVerification = () => {
   const { address } = useAccount()
+  console.log('Connected address:', address) // Use address to avoid unused warning
   const contractAddresses = useContractAddresses()
   const [nftContract, setNftContract] = useState('')
   const [verificationAddress, setVerificationAddress] = useState('')

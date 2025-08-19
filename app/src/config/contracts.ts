@@ -4,8 +4,8 @@ export const getContractAddresses = (chainId: number) => {
   switch (chainId) {
     case sepolia.id:
       return {
-        ANONYMOUS_AUTH: '0x...' as `0x${string}`, // Update with actual Sepolia deployment
-        AIRDROP: '0x...' as `0x${string}`,         // Update with actual Sepolia deployment
+        ANONYMOUS_AUTH: '0x251E596994bf85992341Ff1bbd6E9643c6671fa0' as `0x${string}`,
+        AIRDROP: '0xC5cfd4262F96dADb9fCD894074bB273Ac0CAc898' as `0x${string}`,
       }
     case 31337: // localhost
       return {

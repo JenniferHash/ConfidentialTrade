@@ -7,6 +7,7 @@ import { Shield, Loader2 } from 'lucide-react'
 
 export const AddressRegistration = () => {
   const { address } = useAccount()
+  console.log('Connected address:', address) // Use address to avoid unused warning
   const contractAddresses = useContractAddresses()
   const [shadowAddress, setShadowAddress] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -28,14 +29,14 @@ export const AddressRegistration = () => {
     try {
       // For now, we'll use a placeholder for FHE encryption
       // In a real implementation, you'd use fhevmjs to encrypt the address
-      const encryptedAddress = '0x' + '00'.repeat(32) // Placeholder encrypted data
-      const addressProof = '0x' + '00'.repeat(32) // Placeholder proof
+      const encryptedAddress = ('0x' + '00'.repeat(32)) as `0x${string}` // Placeholder encrypted data
+      const addressProof = ('0x' + '00'.repeat(32)) as `0x${string}` // Placeholder proof
       
       writeContract({
         address: contractAddresses.ANONYMOUS_AUTH,
         abi: ANONYMOUS_AUTH_ABI,
         functionName: 'registerEncryptedAddress',
-        args: [encryptedAddress as `0x${string}`, addressProof as `0x${string}`],
+        args: [encryptedAddress, addressProof],
       })
     } catch (error) {
       console.error('Registration failed:', error)

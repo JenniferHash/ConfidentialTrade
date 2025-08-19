@@ -15,7 +15,7 @@ import {
 
 const config = getDefaultConfig({
   appName: 'Anonymous Auth System',
-  projectId: 'YOUR_PROJECT_ID',
+  projectId: (import.meta as any).env?.VITE_WALLETCONNECT_PROJECT_ID || 'f69e96eb3c6a9fdb37b8ead9c1ffbc5e',
   chains: [mainnet, sepolia],
   ssr: false,
 })

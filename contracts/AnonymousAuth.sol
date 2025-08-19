@@ -26,12 +26,12 @@ contract AnonymousAuth is SepoliaConfig {
         address user;
         address nftContract;
         uint256 timestamp;
+        bool complete;
     }
 
     mapping(address => UserRegistration) public userRegistrations;
-    mapping(bytes32 => NFTVerificationRecord) public nftVerifications;
-    mapping(bytes32 => PendingVerification) private pendingVerifications;
-    mapping(uint256 => bytes32) private requestToVerificationId;
+    mapping(address => mapping(address => bool)) public nftVerifications;
+    mapping(uint256 => PendingVerification) private pendingVerifications;
 
     address public owner;
     mapping(address => bool) public authorizedNFTContracts;
@@ -79,18 +79,9 @@ contract AnonymousAuth is SepoliaConfig {
         authorizedNFTContracts[nftContract] = authorized;
     }
 
-    function requestNFTVerification(address nftContract) external returns (bytes32) {
+    function requestNFTVerification(address nftContract) external returns (uint256) {
         if (!userRegistrations[msg.sender].isRegistered) revert UserNotRegistered();
         if (!authorizedNFTContracts[nftContract]) revert NFTContractNotAuthorized();
-
-        bytes32 verificationId = keccak256(abi.encodePacked(msg.sender, nftContract, block.timestamp));
-
-        // Store pending verification data
-        pendingVerifications[verificationId] = PendingVerification({
-            user: msg.sender,
-            nftContract: nftContract,
-            timestamp: block.timestamp
-        });
 
         // Convert encrypted address to handle and request decryption
         eaddress encryptedAddr = userRegistrations[msg.sender].encryptedAddress;
@@ -98,11 +89,16 @@ contract AnonymousAuth is SepoliaConfig {
         handles[0] = FHE.toBytes32(encryptedAddr);
 
         uint256 requestId = FHE.requestDecryption(handles, this.completeNFTVerification.selector);
-        requestToVerificationId[requestId] = verificationId;
 
-        emit NFTVerificationRequested(msg.sender, nftContract, verificationId);
+        // Store pending verification data
+        pendingVerifications[requestId] = PendingVerification({
+            user: msg.sender,
+            nftContract: nftContract,
+            timestamp: block.timestamp,
+            complete: false
+        });
 
-        return verificationId;
+        return requestId;
     }
 
     function completeNFTVerification(
@@ -112,31 +108,19 @@ contract AnonymousAuth is SepoliaConfig {
     ) external {
         // Verify signatures to prevent fake results
         FHE.checkSignatures(requestId, signatures);
-        bytes32 verificationId = requestToVerificationId[requestId];
-        PendingVerification memory pending = pendingVerifications[verificationId];
+
+        PendingVerification storage pending = pendingVerifications[requestId];
 
         if (pending.user == address(0)) revert InvalidVerificationRequest();
-
+        pending.complete = true;
         // Check if decrypted address owns the NFT
         IERC721 nft = IERC721(pending.nftContract);
         uint256 balance = nft.balanceOf(decryptedAddress);
         bool hasNFT = balance > 0;
 
-        nftVerifications[verificationId] = NFTVerificationRecord({nftContract: pending.nftContract, hasNFT: hasNFT});
+        nftVerifications[pending.user][pending.nftContract] = hasNFT;
 
         // Clean up pending verification
-        delete pendingVerifications[verificationId];
-        delete requestToVerificationId[requestId];
-
-        emit NFTVerificationCompleted(verificationId, hasNFT, address(0));
-    }
-
-    function getAirdropAmount(address nftContract) public view returns (uint256) {
-        // 简单实现：每个授权的NFT合约对应1000个代币的空投
-        if (authorizedNFTContracts[nftContract]) {
-            return 1000 * 10 ** 18; // 假设18位小数
-        }
-        return 0;
     }
 
     function getUserRegistration(address user) external view returns (bool, uint256) {
@@ -144,8 +128,11 @@ contract AnonymousAuth is SepoliaConfig {
         return (reg.isRegistered, reg.registrationTime);
     }
 
-    function getNFTVerification(bytes32 verificationId) external view returns (address, bool) {
-        NFTVerificationRecord memory record = nftVerifications[verificationId];
-        return (record.nftContract, record.hasNFT);
+    function getNFTVerification(address user, address nft) external view returns (bool) {
+        return nftVerifications[user][nft];
+    }
+
+    function getpendingVerification(uint256 id) external view returns (PendingVerification memory) {
+        return pendingVerifications[id];
     }
 }

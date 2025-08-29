@@ -237,7 +237,7 @@ const TokenListItem = ({ token, userAddress, isRevealed, decryptedProxyAddress, 
     args: [token.address],
   });
 
-  const userBalanceNum = userBalance ? Number(userBalance) : 0;
+  const userBalanceNum = userBalance ? Number(userBalance) / 1e18 : 0; // Convert from wei to token units
   const priceNum = tokenPrice ? Number(tokenPrice) / 1e6 : 0;
   const totalValue = userBalanceNum * priceNum;
 
@@ -258,7 +258,7 @@ const TokenListItem = ({ token, userAddress, isRevealed, decryptedProxyAddress, 
       <div className="flex items-center space-x-6">
         <div className="text-right">
           <div className="font-semibold text-white">
-            {userBalanceNum.toFixed(4)}
+            {userBalanceNum < 1 ? userBalanceNum.toFixed(6) : userBalanceNum.toFixed(4)}
           </div>
           <div className="text-sm text-gray-400">
             ${totalValue.toFixed(2)}

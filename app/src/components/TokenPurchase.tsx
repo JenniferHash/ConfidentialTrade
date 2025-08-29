@@ -167,11 +167,24 @@ export const TokenPurchase = () => {
   });
 
   // Purchase transaction
-  const { writeContract: purchaseToken, data: purchaseHash, isPending: isPurchasePending } = useWriteContract();
+  const { writeContract: purchaseToken, data: purchaseHash, isPending: isPurchasePending, error: purchaseError } = useWriteContract();
   
-  const { isLoading: isPurchaseLoading } = useWaitForTransactionReceipt({
+  const { isLoading: isPurchaseLoading, isError: isPurchaseError, error: receiptError } = useWaitForTransactionReceipt({
     hash: purchaseHash,
   });
+
+  // Log transaction errors
+  useEffect(() => {
+    if (purchaseError) {
+      console.error('Purchase contract error:', purchaseError);
+    }
+  }, [purchaseError]);
+
+  useEffect(() => {
+    if (isPurchaseError && receiptError) {
+      console.error('Purchase receipt error:', receiptError);
+    }
+  }, [isPurchaseError, receiptError]);
 
   // Update amounts when user types
   useEffect(() => {
@@ -224,6 +237,14 @@ export const TokenPurchase = () => {
   };
 
   const handlePurchase = async () => {
+    console.log('=== Purchase Debug Info ===');
+    console.log('fromAmount:', fromAmount);
+    console.log('tokenPrice:', tokenPrice);
+    console.log('selectedToken:', selectedToken);
+    console.log('registrationData:', registrationData);
+    console.log('usdtBalance:', usdtBalance);
+    console.log('usdtAllowance:', usdtAllowance);
+
     if (!fromAmount || !tokenPrice || parseFloat(fromAmount) <= 0) {
       toast.error('Please enter a valid amount');
       return;
@@ -234,17 +255,22 @@ export const TokenPurchase = () => {
       return;
     }
 
-    const amount = parseFloat(fromAmount);
-    const totalCost = Number(tokenPrice) * amount;
+    const usdtInputAmount = parseFloat(fromAmount);
+    const usdtCostInWei = BigInt(usdtInputAmount * 1e6); // 用户输入的USDT数量（6位小数）
     
-    if (usdtBalance && totalCost > Number(usdtBalance)) {
+    console.log('USDT input amount:', usdtInputAmount);
+    console.log('USDT cost in wei:', usdtCostInWei.toString());
+    console.log('USDT balance:', Number(usdtBalance));
+    console.log('USDT allowance:', usdtAllowance?.toString());
+    
+    if (usdtBalance && usdtCostInWei > usdtBalance) {
       toast.error('Insufficient USDT balance');
       return;
     }
 
     // Check allowance
-    const requiredAllowance = BigInt(totalCost);
-    if (!usdtAllowance || usdtAllowance < requiredAllowance) {
+    console.log('Required allowance:', usdtCostInWei.toString());
+    if (!usdtAllowance || usdtAllowance < usdtCostInWei) {
       toast.error('Please approve USDT spending first');
       return;
     }
@@ -252,20 +278,50 @@ export const TokenPurchase = () => {
     setIsLoading(true);
     try {
       // Calculate the actual token amount to purchase
-      const tokenAmount = parseFloat(fromAmount) / (Number(tokenPrice) / 1e6);
-      const tokenAmountBigInt = parseUnits(tokenAmount.toString(), 18); // 18 decimals for tokens
-      console.log("tokenAmountBigInt:",fromAmount,tokenPrice,tokenAmount,tokenAmountBigInt);
+      // tokenPrice is in 6-decimal USDT per whole token unit
+      // fromAmount is in USDT (user input)
+      // We need to calculate how many whole token units we can buy
+      const usdtInputAmount = parseFloat(fromAmount); // USDT amount (e.g., 1.0)
+      const tokenPriceInUSDT = Number(tokenPrice) / 1e6; // Convert to decimal USDT (e.g., 4348)
+      const tokenAmountInWei = (usdtInputAmount / tokenPriceInUSDT) * 1e18; // Convert to wei units
+      const tokenAmountBigInt = BigInt(Math.floor(tokenAmountInWei));
       
-      purchaseToken({
+      console.log('=== Purchase Transaction ===');
+      console.log('Contract address:', CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE);
+      console.log('Token address:', selectedToken.address);
+      console.log('Token amount (decimal):', tokenAmountInWei / 1e18);
+      console.log('Token amount (wei):', tokenAmountBigInt.toString());
+      console.log('Expected USDT cost:', usdtCostInWei.toString());
+      
+      await purchaseToken({
         address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
         abi: CONFIDENTIAL_TRADE_ABI,
         functionName: 'anonymousPurchase',
         args: [selectedToken.address as `0x${string}`, tokenAmountBigInt],
       });
-      toast.success(`Purchase initiated: ${fromAmount} USDT for ${tokenAmount.toFixed(6)} ${selectedToken.symbol}`);
-    } catch (error) {
+      toast.success(`Purchase initiated: ${fromAmount} USDT for ${(tokenAmountInWei / 1e18).toFixed(6)} ${selectedToken.symbol}`);
+    } catch (error: any) {
       console.error('Purchase failed:', error);
-      toast.error('Purchase failed. Please try again.');
+      console.error('Error details:', {
+        message: error?.message,
+        code: error?.code,
+        data: error?.data,
+        stack: error?.stack
+      });
+      
+      // 提取更详细的错误信息
+      let errorMessage = 'Purchase failed. Please try again.';
+      if (error?.message) {
+        if (error.message.includes('insufficient')) {
+          errorMessage = 'Insufficient balance or allowance';
+        } else if (error.message.includes('revert')) {
+          errorMessage = `Contract error: ${error.message}`;
+        } else if (error.message.includes('denied')) {
+          errorMessage = 'Transaction denied by user';
+        }
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -276,10 +332,10 @@ export const TokenPurchase = () => {
   
   // Check if approval is needed
   const needsApproval = () => {
-    if (!fromAmount || !tokenPrice) return false;
-    const amount = parseFloat(fromAmount);
-    const totalCost = BigInt(Number(tokenPrice) * amount);
-    return !usdtAllowance || usdtAllowance < totalCost;
+    if (!fromAmount) return false;
+    const usdtInputAmount = parseFloat(fromAmount);
+    const usdtCostInWei = BigInt(usdtInputAmount * 1e6);
+    return !usdtAllowance || usdtAllowance < usdtCostInWei;
   };
 
   // Debug logs

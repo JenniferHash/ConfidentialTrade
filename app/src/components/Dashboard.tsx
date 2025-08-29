@@ -4,9 +4,10 @@ import { CONTRACT_ADDRESSES, ANONYMOUS_AUTH_ABI, AIRDROP_ABI } from '../config/c
 import { AddressRegistration } from './AddressRegistration';
 import { NFTVerification } from './NFTVerification';
 import { AirdropClaiming } from './AirdropClaiming';
+import { NFTMinting } from './NFTMinting';
 import { formatEther } from 'viem';
 
-type TabType = 'register' | 'verify' | 'airdrop';
+type TabType = 'register' | 'verify' | 'airdrop' | 'mint';
 
 export const Dashboard = () => {
   const [activeTab, setActiveTab] = useState<TabType>('register');
@@ -46,7 +47,8 @@ export const Dashboard = () => {
   const tabs = [
     { id: 'register', label: 'Register', description: 'Register your shadow address' },
     { id: 'verify', label: 'Verify NFTs', description: 'Verify NFT ownership' },
-    { id: 'airdrop', label: 'Airdrops', description: 'Claim airdrop eligibility' }
+    { id: 'airdrop', label: 'Airdrops', description: 'Claim airdrop eligibility' },
+    { id: 'mint', label: 'Mint NFT', description: 'Mint test NFTs' }
   ] as const;
 
   const renderContent = () => {
@@ -57,6 +59,8 @@ export const Dashboard = () => {
         return <NFTVerification />;
       case 'airdrop':
         return <AirdropClaiming />;
+      case 'mint':
+        return <NFTMinting />;
       default:
         return <AddressRegistration />;
     }
@@ -75,11 +79,11 @@ export const Dashboard = () => {
                 {isRegistered ? 'Registered' : 'Not Registered'}
               </span>
             </div>
-            {isRegistered && registrationTime > 0n && (
+            {isRegistered && registrationTime && Number(registrationTime) > 0 ? (
               <p className="text-sm text-gray-600 mt-1">
                 Since: {new Date(Number(registrationTime) * 1000).toLocaleDateString()}
               </p>
-            )}
+            ) : null}
           </div>
           
           <div className="bg-white rounded-lg shadow-md p-4">
@@ -125,10 +129,20 @@ export const Dashboard = () => {
       {/* Instructions */}
       <div className="bg-gray-50 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">How to Use the Anonymous Shadow OS</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div>
             <div className="flex items-center mb-2">
               <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">1</div>
+              <h4 className="font-semibold text-gray-800">Mint NFT</h4>
+            </div>
+            <p className="text-gray-600 text-sm">
+              Mint test NFTs for free to experiment with the system. Anyone can mint these simple NFTs.
+            </p>
+          </div>
+          
+          <div>
+            <div className="flex items-center mb-2">
+              <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">2</div>
               <h4 className="font-semibold text-gray-800">Register</h4>
             </div>
             <p className="text-gray-600 text-sm">
@@ -138,7 +152,7 @@ export const Dashboard = () => {
           
           <div>
             <div className="flex items-center mb-2">
-              <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">2</div>
+              <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">3</div>
               <h4 className="font-semibold text-gray-800">Verify NFTs</h4>
             </div>
             <p className="text-gray-600 text-sm">
@@ -148,7 +162,7 @@ export const Dashboard = () => {
           
           <div>
             <div className="flex items-center mb-2">
-              <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">3</div>
+              <div className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">4</div>
               <h4 className="font-semibold text-gray-800">Claim Airdrops</h4>
             </div>
             <p className="text-gray-600 text-sm">

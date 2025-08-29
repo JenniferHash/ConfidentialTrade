@@ -2,6 +2,7 @@
 export const CONTRACT_ADDRESSES = {
   ANONYMOUS_AUTH: '0x8E93aD33bf22CCF3e8e45C87Ff07685D920eFb34',
   AIRDROP: '0x5109E225594b779063B4A268f4E48ed3b366694f',
+  SIMPLE_NFT: '0x125E65Ab721f7ee07976301aeC928319186f090E',
 } as const;
 
 // Sepolia configuration for FHEVM
@@ -106,6 +107,58 @@ export const AIRDROP_ABI = [
     ],
     name: 'hasUnclaimedAirdrop',
     outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function'
+  }
+] as const;
+
+export const SIMPLE_NFT_ABI = [
+  {
+    inputs: [{ name: 'to', type: 'address' }],
+    name: 'mint',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [],
+    name: 'mint',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [{ name: 'owner', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    name: 'ownerOf',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [],
+    name: 'name',
+    outputs: [{ name: '', type: 'string' }],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [],
+    name: 'symbol',
+    outputs: [{ name: '', type: 'string' }],
     stateMutability: 'view',
     type: 'function'
   }

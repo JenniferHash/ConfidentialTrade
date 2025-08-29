@@ -55,7 +55,7 @@ export const AirdropClaiming = () => {
     hash,
   });
 
-  const isRegistered = registrationData?.[0] ?? false;
+  const isRegistered = registrationData?.isRegistered ?? false;
 
   const handleRecordAirdrop = async () => {
     if (!address || !selectedNFTAddress) {

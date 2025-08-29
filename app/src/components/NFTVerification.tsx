@@ -47,7 +47,7 @@ export const NFTVerification = () => {
     hash,
   });
 
-  const isRegistered = registrationData?.[0] ?? false;
+  const isRegistered = registrationData?.isRegistered
   const nftAddress = useCustom ? customNFTAddress : selectedNFT;
 
   const handleVerifyNFT = async () => {

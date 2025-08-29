@@ -174,9 +174,12 @@ export const AddressRegistration = () => {
 
   if (!isConnected) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Register Shadow Address</h2>
-        <p className="text-gray-600">Please connect your wallet to register a shadow address.</p>
+      <div className="card-cyber p-8 text-center">
+        <div className="w-20 h-20 mx-auto mb-6 rounded-full glass-strong flex items-center justify-center animate-pulse">
+          <div className="text-3xl text-cyan-400">🔐</div>
+        </div>
+        <h2 className="text-2xl font-cyber font-bold text-cyan-400 mb-4">WALLET_AUTHENTICATION_REQUIRED</h2>
+        <p className="text-gray-400 font-mono">CONNECTION_STATUS: DISCONNECTED → INITIATE_WALLET_PROTOCOL</p>
       </div>
     );
   }
@@ -184,12 +187,12 @@ export const AddressRegistration = () => {
   // Show loading state while checking registration
   if (registrationLoading && isConnected) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Shadow Address Status</h2>
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking registration status...</p>
+      <div className="card-cyber p-8 text-center">
+        <div className="w-20 h-20 mx-auto mb-6 rounded-full glass-strong flex items-center justify-center">
+          <div className="w-10 h-10 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
         </div>
+        <h2 className="text-2xl font-cyber font-bold text-cyan-400 mb-4">SCANNING_SHADOW_REGISTRY</h2>
+        <p className="text-gray-400 font-mono">BLOCKCHAIN_QUERY_IN_PROGRESS...</p>
       </div>
     );
   }
@@ -197,93 +200,167 @@ export const AddressRegistration = () => {
   // Show registered status if user is already registered
   if (isConnected && !registrationLoading && isRegistered) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-green-800">Shadow Address Registered</h2>
-          <div className="flex items-center text-green-600">
-            <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span className="text-sm font-medium">Active</span>
+      <div className="card-cyber p-8 relative overflow-hidden">
+        {/* Success Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center">
+            <div className="w-16 h-16 rounded-full glass-strong flex items-center justify-center mr-4 border border-green-500/50 animate-pulse">
+              <div className="text-2xl text-green-400">✓</div>
+            </div>
+            <div>
+              <h2 className="text-2xl font-cyber font-bold text-green-400">SHADOW_PROTOCOL_ACTIVE</h2>
+              <div className="text-sm text-gray-400 font-mono">ENCRYPTED_IDENTITY_DEPLOYED</div>
+            </div>
+          </div>
+          
+          <div className="flex items-center px-4 py-2 rounded-full glass-strong border border-green-500/30 animate-pulse">
+            <div className="w-3 h-3 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+            <span className="text-green-400 font-cyber font-bold text-sm">OPERATIONAL</span>
           </div>
         </div>
         
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm font-medium text-green-800 mb-1">Registration Status</p>
-              <p className="text-green-700">Your shadow address has been successfully registered and encrypted on-chain.</p>
+        {/* Status Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Registration Info */}
+          <div className="glass-strong rounded-lg p-6 border border-green-500/30">
+            <div className="flex items-center mb-4">
+              <div className="w-8 h-8 bg-green-400 rounded-lg flex items-center justify-center mr-3">
+                <div className="text-black font-bold">✓</div>
+              </div>
+              <h3 className="font-cyber font-bold text-green-400">REGISTRATION_COMPLETE</h3>
             </div>
             
-            <div>
-              <p className="text-sm font-medium text-green-800 mb-1">Registered On</p>
-              <p className="text-green-700">{formatRegistrationDate(registrationTimestamp)}</p>
+            <div className="space-y-3 text-sm">
+              <div>
+                <div className="text-green-400 font-mono mb-1">DEPLOY_TIMESTAMP:</div>
+                <div className="text-gray-300 font-mono">{formatRegistrationDate(registrationTimestamp)}</div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Security Level */}
+          <div className="glass-strong rounded-lg p-6 border border-cyan-500/30">
+            <div className="flex items-center mb-4">
+              <div className="w-8 h-8 bg-cyan-400 rounded-lg flex items-center justify-center mr-3">
+                <div className="text-black font-bold">🛡</div>
+              </div>
+              <h3 className="font-cyber font-bold text-cyan-400">QUANTUM_ENCRYPTION</h3>
             </div>
             
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400 font-mono">SECURITY_LEVEL:</span>
+                <span className="text-cyan-400 font-cyber">MAXIMUM</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400 font-mono">FHE_STATUS:</span>
+                <span className="text-green-400 font-cyber">ACTIVE</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Encrypted Address Section */}
+        <div className="glass-strong rounded-lg p-6 border border-purple-500/30 mb-8">
+          <div className="flex items-center mb-6">
+            <div className="w-10 h-10 bg-purple-400 rounded-lg flex items-center justify-center mr-4">
+              <div className="text-black font-bold text-xl">⬢</div>
+            </div>
             <div>
-              <p className="text-sm font-medium text-green-800 mb-1">Bound Shadow Address(Encrypted)</p>
-              {encryptedAddress ? (
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-green-700 font-mono text-xs break-all bg-green-100 p-2 rounded">
-                      {encryptedAddress}
-                    </p>
+              <h3 className="font-cyber font-bold text-purple-400">ENCRYPTED_SHADOW_ADDRESS</h3>
+              <div className="text-xs text-gray-400 font-mono">CRYPTOGRAPHIC_IDENTITY_HASH</div>
+            </div>
+          </div>
+          
+          {encryptedAddress ? (
+            <div className="space-y-6">
+              <div className="p-4 bg-gray-900/50 rounded-lg border border-purple-500/30">
+                <div className="text-xs text-purple-400 font-mono mb-2">ENCRYPTED_PAYLOAD:</div>
+                <div className="text-purple-300 font-mono text-xs break-all leading-relaxed">
+                  {encryptedAddress}
+                </div>
+              </div>
+              
+              {decryptedAddress ? (
+                <div className="p-4 bg-green-400/10 rounded-lg border border-green-500/30">
+                  <div className="text-xs text-green-400 font-mono mb-2">DECRYPTED_SHADOW_ADDRESS:</div>
+                  <div className="text-green-300 font-mono text-sm break-all">
+                    {decryptedAddress}
                   </div>
-                  
-                  {decryptedAddress ? (
-                    <div>
-                      <p className="text-xs text-green-600 mb-1">Decrypted Address:</p>
-                      <p className="text-green-700 font-mono text-sm break-all bg-green-100 p-2 rounded">
-                        {decryptedAddress}
-                      </p>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={decryptAddress}
-                      disabled={isDecrypting}
-                      className="flex items-center justify-center w-full bg-green-600 text-white text-sm py-2 px-4 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {isDecrypting ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Decrypting...
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 16.5H9v1.5a1.5 1.5 0 01-1.5 1.5H6v1.5a1.5 1.5 0 01-1.5 1.5H3a1.5 1.5 0 01-1.5-1.5v-2.25A1.5 1.5 0 013 15.5l4.878-4.878A6 6 0 0118 8a6 6 0 00-3-5.197z" />
-                          </svg>
-                          Decrypt Shadow Address
-                        </>
-                      )}
-                    </button>
-                  )}
-                  
-                  {decryptError && (
-                    <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
-                      {decryptError}
-                    </div>
-                  )}
                 </div>
               ) : (
-                <p className="text-green-700 text-sm">Loading encrypted address...</p>
+                <button
+                  onClick={decryptAddress}
+                  disabled={isDecrypting}
+                  className="btn-cyber w-full py-3 px-6 rounded-lg font-cyber font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center justify-center space-x-3">
+                    {isDecrypting ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                        <span>DECRYPTING_SHADOW_ADDRESS...</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-lg">🔓</div>
+                        <span>DECRYPT_SHADOW_ADDRESS</span>
+                      </>
+                    )}
+                  </div>
+                </button>
               )}
+              
+              {decryptError && (
+                <div className="p-3 border border-red-500/30 rounded-lg bg-red-400/5">
+                  <div className="text-red-400 font-mono text-sm">
+                    <span className="font-bold">DECRYPTION_ERROR:</span> {decryptError}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="w-12 h-12 mx-auto mb-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-purple-400 font-mono text-sm">LOADING_ENCRYPTED_PAYLOAD...</p>
+            </div>
+          )}
+        </div>
+
+        {/* Next Steps */}
+        <div className="glass-strong rounded-lg p-6 border border-blue-500/30 mb-6">
+          <div className="flex items-center mb-4">
+            <div className="w-8 h-8 bg-blue-400 rounded-lg flex items-center justify-center mr-3">
+              <div className="text-black font-bold">→</div>
+            </div>
+            <h3 className="font-cyber font-bold text-blue-400">PROTOCOL_CAPABILITIES_UNLOCKED</h3>
+          </div>
+          
+          <div className="space-y-3 text-sm">
+            <div className="flex items-start">
+              <div className="text-cyan-400 mr-3 font-mono">01:</div>
+              <div className="text-gray-300 font-mono">ANONYMOUS_NFT_VERIFICATION → Zero-knowledge asset validation</div>
+            </div>
+            <div className="flex items-start">
+              <div className="text-purple-400 mr-3 font-mono">02:</div>
+              <div className="text-gray-300 font-mono">CONFIDENTIAL_AIRDROPS → Private reward distribution</div>
+            </div>
+            <div className="flex items-start">
+              <div className="text-green-400 mr-3 font-mono">03:</div>
+              <div className="text-gray-300 font-mono">SHADOW_TRANSACTIONS → Encrypted identity operations</div>
             </div>
           </div>
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-blue-800 mb-2">What's Next?</h3>
-          <ul className="text-sm text-blue-700 space-y-1">
-            <li>• Your encrypted shadow address can now be used for anonymous NFT verification</li>
-            <li>• You can participate in airdrops without exposing your shadow address</li>
-            <li>• The system will verify NFT ownership using your encrypted address</li>
-          </ul>
-        </div>
-
-        <div className="mt-4 text-xs text-gray-500">
-          <p className="font-semibold">Privacy Protection:</p>
-          <p>Your shadow address remains encrypted on-chain and can only be accessed by authorized contracts through FHE decryption.</p>
+        {/* Security Notice */}
+        <div className="p-4 border border-yellow-500/30 rounded-lg bg-yellow-400/5">
+          <div className="flex items-center space-x-3">
+            <div className="w-6 h-6 border border-yellow-400 rounded-full flex items-center justify-center animate-pulse">
+              <span className="text-yellow-400 text-sm">⚡</span>
+            </div>
+            <div className="text-yellow-400 font-mono text-sm">
+              <span className="font-bold">QUANTUM_SECURITY:</span> Shadow address encrypted using FHE technology. Only authorized smart contracts can decrypt through secure oracles.
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -291,57 +368,146 @@ export const AddressRegistration = () => {
 
   // Show registration form if not registered
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">Register Shadow Address</h2>
-      <p className="text-gray-600 mb-6">
-        Register an encrypted shadow address that will be used for anonymous NFT verification and airdrops.
-      </p>
-      
-      <div className="space-y-4">
+    <div className="card-cyber p-8 relative overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center mb-8">
+        <div className="w-16 h-16 rounded-lg glass-strong flex items-center justify-center mr-4 border border-cyan-500/50">
+          <div className="text-cyan-400 text-2xl animate-pulse">⬣</div>
+        </div>
         <div>
-          <label htmlFor="shadowAddress" className="block text-sm font-medium text-gray-700 mb-2">
-            Shadow Address (will be encrypted)
-          </label>
-          <input
-            type="text"
-            id="shadowAddress"
-            value={shadowAddress}
-            onChange={(e) => setShadowAddress(e.target.value)}
-            placeholder="0x..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            disabled={isEncrypting || isPending || isConfirming}
-          />
+          <h2 className="text-2xl font-cyber font-bold text-cyan-400">SHADOW_PROTOCOL_DEPLOYMENT</h2>
+          <div className="text-sm text-gray-400 font-mono">INITIALIZE_ENCRYPTED_IDENTITY_LAYER</div>
+        </div>
+      </div>
+      
+      <div className="mb-6 p-4 border border-cyan-500/30 rounded-lg bg-cyan-400/5">
+        <p className="text-cyan-400 font-mono text-sm leading-relaxed">
+          <span className="font-bold">QUANTUM_REGISTRATION:</span> Deploy shadow address with military-grade FHE encryption. Creates anonymous operational layer for confidential transactions and verifications.
+        </p>
+      </div>
+      
+      <div className="space-y-8">
+        {/* Shadow Address Input */}
+        <div className="glass-strong rounded-lg p-6 border border-gray-700">
+          <div className="flex items-center mb-4">
+            <div className="w-8 h-8 bg-gradient-to-r from-cyan-400 to-magenta-400 rounded mr-3"></div>
+            <h3 className="font-cyber text-cyan-400 font-bold">SHADOW_ADDRESS_INPUT</h3>
+          </div>
+          
+          <div>
+            <label htmlFor="shadowAddress" className="block text-sm font-cyber font-bold text-purple-400 mb-3">
+              → TARGET_SHADOW_ADDRESS
+            </label>
+            <input
+              type="text"
+              id="shadowAddress"
+              value={shadowAddress}
+              onChange={(e) => setShadowAddress(e.target.value)}
+              placeholder="0x0000000000000000000000000000000000000000"
+              className="w-full px-4 py-4 bg-gray-900/50 border-2 border-gray-700 rounded-lg focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 text-cyan-400 font-mono placeholder-gray-600 transition-all duration-300"
+              disabled={isEncrypting || isPending || isConfirming}
+            />
+            <div className="mt-2 text-xs text-gray-500 font-mono">
+              INPUT_FORMAT: ETHEREUM_WALLET_ADDRESS → WILL_BE_FHE_ENCRYPTED
+            </div>
+          </div>
         </div>
         
+        {/* Deployment Button */}
         <button
           onClick={handleRegister}
           disabled={!shadowAddress || isEncrypting || isPending || isConfirming || fhevmLoading || !instance}
-          className="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="btn-cyber w-full py-4 px-6 rounded-lg font-cyber text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
         >
-          {fhevmLoading ? 'Loading FHEVM...' :
-           fhevmError ? 'FHEVM Error - Check Console' :
-           !instance ? 'FHEVM Not Ready' :
-           isEncrypting ? 'Encrypting...' :
-           isPending || isConfirming ? 'Confirming...' :
-           'Register Shadow Address'}
+          <div className="flex items-center justify-center space-x-3">
+            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+              isEncrypting || isPending || isConfirming || fhevmLoading 
+                ? 'animate-spin border-current' 
+                : 'border-current'
+            }`}>
+              {fhevmLoading ? '⟳' :
+               fhevmError ? '⚠' :
+               !instance ? '⏸' :
+               isEncrypting ? '🔐' :
+               isPending || isConfirming ? '⟳' :
+               '⬣'}
+            </div>
+            <span>
+              {fhevmLoading ? 'INITIALIZING_FHEVM_PROTOCOL...' :
+               fhevmError ? 'FHEVM_PROTOCOL_ERROR' :
+               !instance ? 'FHEVM_PROTOCOL_NOT_READY' :
+               isEncrypting ? 'ENCRYPTING_SHADOW_ADDRESS...' :
+               isPending || isConfirming ? 'DEPLOYING_TO_BLOCKCHAIN...' :
+               'DEPLOY_SHADOW_PROTOCOL'}
+            </span>
+          </div>
         </button>
         
+        {/* Status Messages */}
         {fhevmError && (
-          <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-            <p className="font-semibold">FHEVM Error:</p>
-            <p>{fhevmError}</p>
+          <div className="p-4 border border-red-500/30 rounded-lg bg-red-400/5">
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="w-6 h-6 border border-red-400 rounded-full flex items-center justify-center">
+                <span className="text-red-400 text-sm">!</span>
+              </div>
+              <div className="text-red-400 font-cyber font-bold">FHEVM_PROTOCOL_ERROR</div>
+            </div>
+            <div className="text-red-300 font-mono text-sm pl-9">
+              {fhevmError}
+            </div>
           </div>
         )}
         
         {fhevmLoading && (
-          <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded-md">
-            <p>Loading FHEVM SDK... This may take a moment.</p>
+          <div className="p-4 border border-blue-500/30 rounded-lg bg-blue-400/5">
+            <div className="flex items-center space-x-3">
+              <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+              <div className="text-blue-400 font-mono text-sm">
+                <span className="font-bold">FHEVM_INITIALIZATION:</span> Loading quantum encryption protocols...
+              </div>
+            </div>
           </div>
         )}
         
-        <div className="text-sm text-gray-500">
-          <p className="font-semibold">Privacy Notice:</p>
-          <p>Your shadow address will be encrypted using Zama's FHE technology. Only you and authorized contracts can access it.</p>
+        {/* Security Information */}
+        <div className="glass-strong rounded-lg p-6 border border-green-500/30">
+          <div className="flex items-center mb-4">
+            <div className="w-8 h-8 bg-green-400 rounded-lg flex items-center justify-center mr-3">
+              <div className="text-black font-bold">🛡</div>
+            </div>
+            <h3 className="font-cyber font-bold text-green-400">SECURITY_PROTOCOL_DETAILS</h3>
+          </div>
+          
+          <div className="space-y-3 text-sm font-mono text-gray-300">
+            <div className="flex items-start">
+              <span className="text-cyan-400 mr-2">01:</span>
+              <span>ADDRESS_ENCRYPTION → ZAMA_FHE_TECHNOLOGY [QUANTUM_RESISTANT]</span>
+            </div>
+            <div className="flex items-start">
+              <span className="text-purple-400 mr-2">02:</span>
+              <span>ON_CHAIN_STORAGE → BLOCKCHAIN_COMMITMENT [IMMUTABLE_RECORD]</span>
+            </div>
+            <div className="flex items-start">
+              <span className="text-yellow-400 mr-2">03:</span>
+              <span>ACCESS_CONTROL → AUTHORIZED_CONTRACTS_ONLY [ZERO_EXPOSURE]</span>
+            </div>
+            <div className="flex items-start">
+              <span className="text-green-400 mr-2">04:</span>
+              <span>ANONYMOUS_OPERATIONS → SHADOW_IDENTITY_LAYER [TOTAL_PRIVACY]</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Privacy Warning */}
+        <div className="p-4 border border-yellow-500/30 rounded-lg bg-yellow-400/5">
+          <div className="flex items-center space-x-3">
+            <div className="w-6 h-6 border border-yellow-400 rounded-full flex items-center justify-center animate-pulse">
+              <span className="text-yellow-400 text-sm">⚡</span>
+            </div>
+            <div className="text-yellow-400 font-mono text-sm">
+              <span className="font-bold">PRIVACY_GUARANTEE:</span> Shadow address undergoes military-grade encryption. Only you and pre-authorized smart contracts can decrypt via secure FHE oracles.
+            </div>
+          </div>
         </div>
       </div>
     </div>

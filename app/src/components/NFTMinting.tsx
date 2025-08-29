@@ -86,125 +86,232 @@ export const NFTMinting = () => {
 
   if (!isConnected) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-lg shadow-md p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">NFT Minting</h2>
-          <p className="text-gray-600 mb-4">Connect your wallet to mint NFTs</p>
+      <div className="max-w-4xl mx-auto">
+        <div className="card-cyber p-8 text-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full glass-strong flex items-center justify-center animate-pulse">
+            <div className="text-3xl text-blue-400">🎨</div>
+          </div>
+          <h2 className="text-2xl font-cyber font-bold text-blue-400 mb-4">WALLET_CONNECTION_REQUIRED</h2>
+          <p className="text-gray-400 font-mono">NFT_MINTING_DISABLED → AUTHENTICATE_WALLET_PROTOCOL</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Mint NFT</h2>
+    <div className="max-w-4xl mx-auto">
+      <div className="card-cyber p-8 relative overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center mb-8">
+          <div className="w-16 h-16 rounded-lg glass-strong flex items-center justify-center mr-4 border border-blue-500/50 animate-float">
+            <div className="text-blue-400 text-2xl animate-pulse">⬢</div>
+          </div>
+          <div>
+            <h2 className="text-2xl font-cyber font-bold text-blue-400">NFT_ASSET_GENERATION</h2>
+            <div className="text-sm text-gray-400 font-mono">QUANTUM_SECURED_DIGITAL_ARTIFACTS</div>
+          </div>
+        </div>
+        
+        <div className="mb-8 p-4 border border-blue-500/30 rounded-lg bg-blue-400/5">
+          <p className="text-blue-400 font-mono text-sm leading-relaxed">
+            <span className="font-bold">ASSET_GENERATION:</span> Create test digital artifacts for system validation. Each NFT receives unique cryptographic identity for ownership verification protocols.
+          </p>
+        </div>
 
-        {/* Contract Info */}
-        <div className="bg-gray-50 rounded-lg p-4 mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-3">Contract Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="font-medium text-gray-600">Name:</span>
-              <span className="ml-2 text-gray-800">{contractName || 'Loading...'}</span>
-            </div>
-            <div>
-              <span className="font-medium text-gray-600">Symbol:</span>
-              <span className="ml-2 text-gray-800">{contractSymbol || 'Loading...'}</span>
+        <div className="space-y-8">
+          {/* Contract Status */}
+          <div className="glass-strong rounded-lg p-6 border border-green-500/30">
+            <div className="flex items-center mb-6">
+              <div className="w-10 h-10 bg-green-400 rounded-lg flex items-center justify-center mr-4">
+                <div className="text-black font-bold">📊</div>
+              </div>
+              <div>
+                <h3 className="font-cyber font-bold text-green-400">CONTRACT_STATUS_REPORT</h3>
+                <div className="text-xs text-gray-400 font-mono">SMART_CONTRACT_ANALYTICS</div>
+              </div>
             </div>
             
-            <div>
-              <span className="font-medium text-gray-600">Your Balance:</span>
-              <span className="ml-2 text-gray-800">{userBalance?.toString() || '0'}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="p-4 bg-gray-900/50 rounded-lg border border-green-500/20">
+                <div className="text-xs text-green-400 font-mono mb-1">CONTRACT_NAME:</div>
+                <div className="text-green-300 font-cyber text-lg">{contractName || 'LOADING...'}</div>
+              </div>
+              
+              <div className="p-4 bg-gray-900/50 rounded-lg border border-green-500/20">
+                <div className="text-xs text-green-400 font-mono mb-1">TOKEN_SYMBOL:</div>
+                <div className="text-green-300 font-cyber text-lg">{contractSymbol || 'LOADING...'}</div>
+              </div>
+              
+              <div className="p-4 bg-gray-900/50 rounded-lg border border-green-500/20">
+                <div className="text-xs text-green-400 font-mono mb-1">YOUR_BALANCE:</div>
+                <div className="text-green-300 font-cyber text-lg">{userBalance?.toString() || '0'} NFTs</div>
+              </div>
+              
+              <div className="md:col-span-2 lg:col-span-3 p-4 bg-gray-900/50 rounded-lg border border-green-500/20">
+                <div className="text-xs text-green-400 font-mono mb-1">CONTRACT_ADDRESS:</div>
+                <div className="text-green-300 font-mono text-sm break-all">{CONTRACT_ADDRESSES.SIMPLE_NFT}</div>
+              </div>
             </div>
           </div>
-          <div className="mt-3 text-xs text-gray-500">
-            Contract: {CONTRACT_ADDRESSES.SIMPLE_NFT}
-          </div>
-        </div>
 
-        {/* Minting Options */}
-        <div className="space-y-4 mb-6">
-          <div className="flex items-center space-x-4">
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="mintOption"
-                checked={!isCustomAddress}
-                onChange={() => setIsCustomAddress(false)}
-                className="mr-2"
-              />
-              <span className="text-gray-700">Mint to my address</span>
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="mintOption"
-                checked={isCustomAddress}
-                onChange={() => setIsCustomAddress(true)}
-                className="mr-2"
-              />
-              <span className="text-gray-700">Mint to custom address</span>
-            </label>
-          </div>
-
-          {isCustomAddress && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Recipient Address
+          {/* Minting Configuration */}
+          <div className="glass-strong rounded-lg p-6 border border-purple-500/30">
+            <div className="flex items-center mb-6">
+              <div className="w-10 h-10 bg-purple-400 rounded-lg flex items-center justify-center mr-4">
+                <div className="text-black font-bold">⚙️</div>
+              </div>
+              <div>
+                <h3 className="font-cyber font-bold text-purple-400">MINTING_CONFIGURATION</h3>
+                <div className="text-xs text-gray-400 font-mono">TARGET_ADDRESS_SPECIFICATION</div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <label className={`cursor-pointer p-6 rounded-lg border-2 transition-all duration-300 ${
+                !isCustomAddress 
+                  ? 'border-blue-400 bg-blue-400/10 text-blue-400' 
+                  : 'border-gray-600 bg-gray-800/50 text-gray-400 hover:border-blue-500/50'
+              }`}>
+                <input
+                  type="radio"
+                  name="mintOption"
+                  checked={!isCustomAddress}
+                  onChange={() => setIsCustomAddress(false)}
+                  className="sr-only"
+                />
+                <div className="flex items-center">
+                  <div className={`w-6 h-6 rounded-full border-2 mr-4 ${
+                    !isCustomAddress ? 'border-blue-400 bg-blue-400' : 'border-gray-600'
+                  }`}>
+                    {!isCustomAddress && <div className="w-3 h-3 bg-black rounded-full m-0.5"></div>}
+                  </div>
+                  <div>
+                    <div className="font-cyber font-bold text-lg">SELF_TARGET</div>
+                    <div className="text-xs font-mono opacity-80">Mint to connected wallet</div>
+                  </div>
+                </div>
               </label>
-              <input
-                type="text"
-                value={mintToAddress}
-                onChange={(e) => setMintToAddress(e.target.value)}
-                placeholder="0x..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-              />
+              
+              <label className={`cursor-pointer p-6 rounded-lg border-2 transition-all duration-300 ${
+                isCustomAddress 
+                  ? 'border-cyan-400 bg-cyan-400/10 text-cyan-400' 
+                  : 'border-gray-600 bg-gray-800/50 text-gray-400 hover:border-cyan-500/50'
+              }`}>
+                <input
+                  type="radio"
+                  name="mintOption"
+                  checked={isCustomAddress}
+                  onChange={() => setIsCustomAddress(true)}
+                  className="sr-only"
+                />
+                <div className="flex items-center">
+                  <div className={`w-6 h-6 rounded-full border-2 mr-4 ${
+                    isCustomAddress ? 'border-cyan-400 bg-cyan-400' : 'border-gray-600'
+                  }`}>
+                    {isCustomAddress && <div className="w-3 h-3 bg-black rounded-full m-0.5"></div>}
+                  </div>
+                  <div>
+                    <div className="font-cyber font-bold text-lg">CUSTOM_TARGET</div>
+                    <div className="text-xs font-mono opacity-80">Mint to specified address</div>
+                  </div>
+                </div>
+              </label>
             </div>
-          )}
-        </div>
 
-        {/* Mint Button */}
-        <button
-          onClick={handleMint}
-          disabled={isPending || isConfirming}
-          className="w-full bg-primary text-white py-3 px-4 rounded-md font-medium hover:bg-primary/90 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-        >
-          {isPending || isConfirming ? (
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-              {isPending ? 'Minting...' : 'Confirming...'}
-            </div>
-          ) : (
-            'Mint NFT'
-          )}
-        </button>
-
-        {/* Transaction Status */}
-        {hash && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-800">
-              Transaction submitted: 
-              <a
-                href={`https://sepolia.etherscan.io/tx/${hash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-1 underline hover:text-blue-600"
-              >
-                View on Etherscan
-              </a>
-            </p>
+            {isCustomAddress && (
+              <div className="animate-slide-in">
+                <label className="block text-sm font-cyber font-bold text-cyan-400 mb-3">
+                  → RECIPIENT_ADDRESS_SPECIFICATION
+                </label>
+                <input
+                  type="text"
+                  value={mintToAddress}
+                  onChange={(e) => setMintToAddress(e.target.value)}
+                  placeholder="0x0000000000000000000000000000000000000000"
+                  className="w-full px-4 py-3 bg-gray-900/50 border-2 border-gray-700 rounded-lg focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 text-cyan-400 font-mono placeholder-gray-600 transition-all duration-300"
+                />
+                <div className="mt-2 text-xs text-gray-500 font-mono">
+                  FORMAT: VALID_ETHEREUM_ADDRESS_REQUIRED
+                </div>
+              </div>
+            )}
           </div>
-        )}
 
-        {/* Info */}
-        <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
-          <h4 className="font-medium text-yellow-800 mb-2">About This NFT</h4>
-          <p className="text-sm text-yellow-700">
-            This is a simple NFT contract where anyone can mint tokens for free. 
-            Each token has a unique ID and can be transferred like any standard ERC721 NFT.
-            You can use this NFT for testing the verification system in this application.
-          </p>
+          {/* Mint Action */}
+          <button
+            onClick={handleMint}
+            disabled={isPending || isConfirming}
+            className="btn-cyber w-full py-4 px-6 rounded-lg font-cyber text-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+          >
+            <div className="flex items-center justify-center space-x-3">
+              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                isPending || isConfirming ? 'animate-spin border-current' : 'border-current'
+              }`}>
+                {isPending || isConfirming ? '⟳' : '⬢'}
+              </div>
+              <span>
+                {isPending || isConfirming 
+                  ? (isPending ? 'MINTING_NFT_ASSET...' : 'CONFIRMING_TRANSACTION...') 
+                  : 'EXECUTE_NFT_GENERATION'
+                }
+              </span>
+            </div>
+          </button>
+
+          {/* Transaction Status */}
+          {hash && (
+            <div className="glass-strong rounded-lg p-6 border border-blue-500/30 animate-slide-in">
+              <div className="flex items-center mb-4">
+                <div className="w-8 h-8 bg-blue-400 rounded-lg flex items-center justify-center mr-3">
+                  <div className="text-black font-bold">🔗</div>
+                </div>
+                <h3 className="font-cyber font-bold text-blue-400">TRANSACTION_SUBMITTED</h3>
+              </div>
+              
+              <div className="p-4 bg-gray-900/50 rounded-lg border border-blue-500/20">
+                <div className="text-xs text-blue-400 font-mono mb-2">TRANSACTION_HASH:</div>
+                <div className="text-blue-300 font-mono text-sm break-all mb-3">{hash}</div>
+                <a
+                  href={`https://sepolia.etherscan.io/tx/${hash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center space-x-2 text-blue-400 hover:text-blue-300 font-cyber text-sm transition-colors"
+                >
+                  <span>VIEW_ON_ETHERSCAN</span>
+                  <div className="text-xs">↗</div>
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* Asset Information */}
+          <div className="glass-strong rounded-lg p-6 border border-yellow-500/30">
+            <div className="flex items-center mb-4">
+              <div className="w-8 h-8 bg-yellow-400 rounded-lg flex items-center justify-center mr-3">
+                <div className="text-black font-bold">📋</div>
+              </div>
+              <h3 className="font-cyber font-bold text-yellow-400">NFT_ASSET_SPECIFICATIONS</h3>
+            </div>
+            
+            <div className="space-y-3 text-sm font-mono text-gray-300">
+              <div className="flex items-start">
+                <span className="text-cyan-400 mr-2">01:</span>
+                <span>FREE_MINT_PROTOCOL → No payment required for asset generation</span>
+              </div>
+              <div className="flex items-start">
+                <span className="text-purple-400 mr-2">02:</span>
+                <span>UNIQUE_IDENTIFIERS → Each NFT receives cryptographic ID</span>
+              </div>
+              <div className="flex items-start">
+                <span className="text-green-400 mr-2">03:</span>
+                <span>ERC721_COMPLIANCE → Standard transferable digital assets</span>
+              </div>
+              <div className="flex items-start">
+                <span className="text-yellow-400 mr-2">04:</span>
+                <span>VERIFICATION_COMPATIBLE → Usable in shadow protocol testing</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

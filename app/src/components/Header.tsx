@@ -46,14 +46,14 @@ export const Header = () => {
               <div>
                 <h1 className="text-3xl font-cyber font-bold relative">
                   <span className="text-neon animate-glow">{glitchText}</span>{' '}
-                  <span className="text-neon-purple">IDENTITY</span>
+                  <span className="text-neon-purple">TRADE</span>
                   
                   {/* Glitch overlay */}
                   <span className="absolute inset-0 text-red-500 opacity-0 animate-pulse" style={{
                     clipPath: 'polygon(0 0, 100% 0, 100% 45%, 0 45%)',
                     animation: 'glitch 0.3s infinite linear alternate-reverse'
                   }}>
-                    {glitchText} IDENTITY
+                    {glitchText} TRADE
                   </span>
                 </h1>
                 <div className="text-sm text-gray-400 font-mono tracking-wider">

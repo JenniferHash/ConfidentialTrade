@@ -166,6 +166,17 @@ export const TokenPurchase = () => {
     }
   });
 
+  // Get user balance for selected token
+  const { data: selectedTokenBalance } = useReadContract({
+    address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
+    abi: CONFIDENTIAL_TRADE_ABI,
+    functionName: 'getUserBalance',
+    args: [address!, selectedToken.address as `0x${string}`],
+    query: {
+      enabled: !!address && !!selectedToken.address
+    }
+  });
+
   // Purchase transaction
   const { writeContract: purchaseToken, data: purchaseHash, isPending: isPurchasePending, error: purchaseError } = useWriteContract();
   
@@ -330,6 +341,13 @@ export const TokenPurchase = () => {
   const rate = tokenPrice ? (1 / (Number(tokenPrice) / 1e6)).toFixed(6) : '0';
   const hasInsufficientBalance = Boolean(usdtBalance && toAmount && parseFloat(toAmount) > Number(usdtBalance) / 1e6);
   
+  // Calculate selected token balance display
+  const selectedTokenBalanceDisplay = selectedTokenBalance ? 
+    (Number(selectedTokenBalance) / 1e18 < 1 ? 
+      (Number(selectedTokenBalance) / 1e18).toFixed(6) : 
+      (Number(selectedTokenBalance) / 1e18).toFixed(4)
+    ) : '0.00';
+  
   // Check if approval is needed
   const needsApproval = () => {
     if (!fromAmount) return false;
@@ -415,7 +433,7 @@ export const TokenPurchase = () => {
           <div className="flex justify-between text-sm">
             <span className="text-gray-400">To</span>
             <span className="text-gray-400">
-              Balance: 0.00
+              Balance: {selectedTokenBalanceDisplay}
             </span>
           </div>
           

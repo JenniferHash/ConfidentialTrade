@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useAccount, useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
-import { isAddress } from 'viem';
+import { isAddress, parseUnits } from 'viem';
 import toast from 'react-hot-toast';
-import { CONTRACT_ADDRESSES, SIMPLE_NFT_ABI } from '../config/contracts';
+import { CONTRACT_ADDRESSES, SIMPLE_NFT_ABI, MOCK_USDT_ABI } from '../config/contracts';
 
 export const NFTMinting = () => {
   const [mintToAddress, setMintToAddress] = useState('');
@@ -38,12 +38,28 @@ export const NFTMinting = () => {
     functionName: 'symbol',
   });
 
+  // Read USDT balance
+  const { data: usdtBalance } = useReadContract({
+    address: CONTRACT_ADDRESSES.MOCK_USDT as `0x${string}`,
+    abi: MOCK_USDT_ABI,
+    functionName: 'balanceOf',
+    args: [address!],
+    query: {
+      enabled: !!address
+    }
+  });
+
   // Write contract hooks
   const { writeContract, data: hash, isPending } = useWriteContract();
+  const { writeContract: writeUsdtContract, data: usdtHash, isPending: isUsdtPending } = useWriteContract();
 
   // Wait for transaction confirmation
   const { isLoading: isConfirming } = useWaitForTransactionReceipt({
     hash,
+  });
+
+  const { isLoading: isUsdtConfirming } = useWaitForTransactionReceipt({
+    hash: usdtHash,
   });
 
   const handleMint = async () => {
@@ -81,6 +97,27 @@ export const NFTMinting = () => {
     } catch (error: any) {
       console.error('Minting error:', error);
       toast.error(error?.message || 'Failed to mint NFT');
+    }
+  };
+
+  const handleMintUsdt = async () => {
+    if (!isConnected) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
+    try {
+      await writeUsdtContract({
+        address: CONTRACT_ADDRESSES.MOCK_USDT as `0x${string}`,
+        abi: MOCK_USDT_ABI,
+        functionName: 'mint',
+        args: [address!, parseUnits('10000', 6)], // 10,000 USDT with 6 decimals
+      });
+
+      toast.success('Minting 10,000 USDT... Please wait for confirmation');
+    } catch (error: any) {
+      console.error('USDT minting error:', error);
+      toast.error(error?.message || 'Failed to mint USDT');
     }
   };
 
@@ -146,12 +183,97 @@ export const NFTMinting = () => {
                 <div className="text-xs text-green-400 font-mono mb-1">YOUR_BALANCE:</div>
                 <div className="text-green-300 font-cyber text-lg">{userBalance?.toString() || '0'} NFTs</div>
               </div>
+
+              <div className="p-4 bg-gray-900/50 rounded-lg border border-yellow-500/20">
+                <div className="text-xs text-yellow-400 font-mono mb-1">USDT_BALANCE:</div>
+                <div className="text-yellow-300 font-cyber text-lg">
+                  {usdtBalance ? (Number(usdtBalance) / 1e6).toFixed(2) : '0.00'} USDT
+                </div>
+              </div>
               
               <div className="md:col-span-2 lg:col-span-3 p-4 bg-gray-900/50 rounded-lg border border-green-500/20">
                 <div className="text-xs text-green-400 font-mono mb-1">CONTRACT_ADDRESS:</div>
                 <div className="text-green-300 font-mono text-sm break-all">{CONTRACT_ADDRESSES.SIMPLE_NFT}</div>
               </div>
             </div>
+          </div>
+
+          {/* USDT Minting Section */}
+          <div className="glass-strong rounded-lg p-6 border border-yellow-500/30">
+            <div className="flex items-center mb-6">
+              <div className="w-10 h-10 bg-yellow-400 rounded-lg flex items-center justify-center mr-4">
+                <div className="text-black font-bold">💰</div>
+              </div>
+              <div>
+                <h3 className="font-cyber font-bold text-yellow-400">USDT_TOKEN_GENERATION</h3>
+                <div className="text-xs text-gray-400 font-mono">MOCK_CURRENCY_CREATION_PROTOCOL</div>
+              </div>
+            </div>
+
+            <div className="mb-6 p-4 border border-yellow-500/30 rounded-lg bg-yellow-400/5">
+              <p className="text-yellow-400 font-mono text-sm leading-relaxed">
+                <span className="font-bold">USDT_GENERATION:</span> Mint 10,000 test USDT tokens for anonymous purchase testing. Each mint provides sufficient funds for multiple token acquisitions.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <div className="text-yellow-400 font-cyber font-bold">Current Balance:</div>
+                <div className="text-yellow-300 font-mono text-2xl">
+                  {usdtBalance ? (Number(usdtBalance) / 1e6).toFixed(2) : '0.00'} USDT
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-gray-400 font-mono text-sm">Per Mint Amount:</div>
+                <div className="text-yellow-400 font-cyber font-bold text-xl">10,000 USDT</div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleMintUsdt}
+              disabled={isUsdtPending || isUsdtConfirming}
+              className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-cyber font-bold py-4 px-6 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+            >
+              <div className="flex items-center justify-center space-x-3">
+                <div className={`w-6 h-6 rounded-full border-2 border-black flex items-center justify-center ${
+                  isUsdtPending || isUsdtConfirming ? 'animate-spin' : ''
+                }`}>
+                  {isUsdtPending || isUsdtConfirming ? '⟳' : '💰'}
+                </div>
+                <span>
+                  {isUsdtPending || isUsdtConfirming 
+                    ? (isUsdtPending ? 'MINTING_USDT...' : 'CONFIRMING_TRANSACTION...') 
+                    : 'MINT_10000_USDT_TOKENS'
+                  }
+                </span>
+              </div>
+            </button>
+
+            {/* USDT Transaction Status */}
+            {usdtHash && (
+              <div className="mt-6 glass-strong rounded-lg p-4 border border-yellow-500/30 animate-slide-in">
+                <div className="flex items-center mb-3">
+                  <div className="w-6 h-6 bg-yellow-400 rounded-lg flex items-center justify-center mr-3">
+                    <div className="text-black font-bold text-sm">🔗</div>
+                  </div>
+                  <h4 className="font-cyber font-bold text-yellow-400">USDT_TRANSACTION_SUBMITTED</h4>
+                </div>
+                
+                <div className="p-3 bg-gray-900/50 rounded-lg border border-yellow-500/20">
+                  <div className="text-xs text-yellow-400 font-mono mb-2">TRANSACTION_HASH:</div>
+                  <div className="text-yellow-300 font-mono text-sm break-all mb-3">{usdtHash}</div>
+                  <a
+                    href={`https://sepolia.etherscan.io/tx/${usdtHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center space-x-2 text-yellow-400 hover:text-yellow-300 font-cyber text-sm transition-colors"
+                  >
+                    <span>VIEW_ON_ETHERSCAN</span>
+                    <div className="text-xs">↗</div>
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Minting Configuration */}

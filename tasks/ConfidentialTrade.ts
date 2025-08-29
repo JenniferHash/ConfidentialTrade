@@ -394,3 +394,33 @@ task("confidential-trade:get-pending-withdrawal", "Get pending withdrawal detail
     console.log(`Timestamp: ${new Date(Number(pending.timestamp) * 1000).toISOString()}`);
     console.log(`Complete: ${pending.complete}`);
   });
+
+/**
+ * Example:
+ *   - npx hardhat --network sepolia confidential-trade:get-price --token-address 0x0000000000000000000000000000000000000001
+ */
+task("confidential-trade:get-price", "Get current token price")
+  .addOptionalParam("contract", "Optionally specify the ConfidentialTrade contract address")
+  .addParam("tokenAddress", "The token address to get price for")
+  .setAction(async function (taskArguments: TaskArguments, hre) {
+    const { ethers, deployments } = hre;
+
+    const tokenAddress = taskArguments.tokenAddress;
+    if (!ethers.isAddress(tokenAddress)) {
+      throw new Error(`Invalid token address: ${tokenAddress}`);
+    }
+
+    const ConfidentialTradeDeployment = taskArguments.contract
+      ? { address: taskArguments.contract }
+      : await deployments.get("ConfidentialTrade");
+    console.log(`ConfidentialTrade: ${ConfidentialTradeDeployment.address}`);
+
+    const confidentialTradeContract = await ethers.getContractAt("ConfidentialTrade", ConfidentialTradeDeployment.address);
+
+    const price = await confidentialTradeContract.getTokenPrice(tokenAddress);
+
+    console.log(`Token: ${tokenAddress}`);
+    console.log(`Price (raw): ${price.toString()}`);
+    console.log(`Price (formatted): ${ethers.formatUnits(price, 6)} USDT per token`);
+    console.log(`Exchange rate: 1 USDT = ${(1 / parseFloat(ethers.formatUnits(price, 6))).toFixed(6)} tokens`);
+  });

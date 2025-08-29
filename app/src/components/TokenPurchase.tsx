@@ -108,9 +108,9 @@ export const TokenPurchase = () => {
 
   // Update amounts when user types
   useEffect(() => {
-    if (fromAmount && tokenPrice) {
-      const cost = parseFloat(fromAmount) * Number(tokenPrice) / 1e6;
-      setToAmount(cost.toFixed(6));
+    if (fromAmount && tokenPrice && Number(tokenPrice) > 0) {
+      const tokenAmount = parseFloat(fromAmount) / (Number(tokenPrice) / 1e6);
+      setToAmount(tokenAmount.toFixed(6));
     } else if (!fromAmount) {
       setToAmount('');
     }

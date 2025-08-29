@@ -38,11 +38,11 @@ contract ConfidentialTrade is SepoliaConfig {
 
     mapping(address => uint256) public tokenPrices;
 
-    //user address => decryptedProxyAddress
-    mapping(address => address) public decryptedProxyAddresses;
+    //proxy address => decryptedRealAddress
+    mapping(address => address) public proxyToDecryptMainAddresses;
 
     //real address => proxy address
-    mapping(address => address) public decryptMainToProxyAddress;
+    mapping(address => address) public decryptMainToProxyAddresses;
 
     // Events
     event UserRegistered(address indexed user, uint256 timestamp);
@@ -163,10 +163,10 @@ contract ConfidentialTrade is SepoliaConfig {
     /**
      * @dev Complete withdrawal after decryption (callback function)
      * @param requestId The decryption request ID
-     * @param decryptedProxyAddress The decrypted proxy address
+     * @param decryptedRealAddress The decrypted proxy address
      * @param signatures Cryptographic signatures for verification
      */
-    function revealAndWithdraw(uint256 requestId, address decryptedProxyAddress, bytes[] calldata signatures) external {
+    function revealAndWithdraw(uint256 requestId, address decryptedRealAddress, bytes[] calldata signatures) external {
         // Verify signatures to prevent fake results
         FHE.checkSignatures(requestId, signatures);
 
@@ -180,14 +180,18 @@ contract ConfidentialTrade is SepoliaConfig {
         // The decrypted proxy address can now claim these tokens
         // In a real implementation, this would transfer actual tokens to the proxy address
         // For now, we just emit an event showing the proxy address can claim the amounts
-        decryptedProxyAddresses[pending.user] = decryptedProxyAddress;
-        emit WithdrawalCompleted(requestId, decryptedProxyAddress);
+        proxyToDecryptMainAddresses[pending.user] = decryptedRealAddress;
+        decryptMainToProxyAddresses[decryptedRealAddress] = pending.user;
     }
 
-    function decryptWithdrawToken(address user, address tokenAddress) external {
-        require(decryptedProxyAddresses[user] == msg.sender, "not proxy address");
-        userBalances[msg.sender][tokenAddress] = userBalances[user][tokenAddress];
-        userBalances[user][tokenAddress] = 0;
+    function decryptWithdrawToken(address proxy, address tokenAddress) external {
+        require(proxyToDecryptMainAddresses[proxy] == msg.sender, "not proxy address");
+        userBalances[msg.sender][tokenAddress] = userBalances[proxy][tokenAddress];
+        userBalances[proxy][tokenAddress] = 0;
+    }
+
+    function getProxyAddress(address realAddress) public view returns (address) {
+        return decryptMainToProxyAddresses[realAddress];
     }
 
     /**

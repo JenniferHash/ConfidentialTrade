@@ -9,9 +9,10 @@ import { TokenPurchase } from './TokenPurchase';
 import { AdminPanel } from './AdminPanel';
 import { RevealPage } from './RevealPage';
 import { AssetsPage } from './AssetsPage';
+import { WithdrawPage } from './WithdrawPage';
 import { formatEther } from 'viem';
 
-type TabType = 'register' | 'verify' | 'airdrop' | 'mint' | 'purchase' | 'admin' | 'reveal' | 'assets';
+type TabType = 'register' | 'verify' | 'airdrop' | 'mint' | 'purchase' | 'admin' | 'reveal' | 'assets' | 'withdraw';
 
 export const Dashboard = () => {
   const [activeTab, setActiveTab] = useState<TabType>('register');
@@ -52,6 +53,7 @@ export const Dashboard = () => {
     { id: 'register', label: 'Register', description: 'Register your shadow address' },
     { id: 'purchase', label: 'Purchase', description: 'Buy tokens anonymously' },
     { id: 'assets', label: 'Assets', description: 'View your holdings' },
+    { id: 'withdraw', label: 'Withdraw', description: 'Transfer to proxy address' },
     { id: 'reveal', label: 'Reveal', description: 'Reveal proxy address' },
     { id: 'admin', label: 'Admin', description: 'Manage token prices' },
     { id: 'verify', label: 'Verify NFTs', description: 'Verify NFT ownership' },
@@ -67,6 +69,8 @@ export const Dashboard = () => {
         return <TokenPurchase />;
       case 'assets':
         return <AssetsPage />;
+      case 'withdraw':
+        return <WithdrawPage />;
       case 'reveal':
         return <RevealPage />;
       case 'admin':

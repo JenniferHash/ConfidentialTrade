@@ -319,5 +319,15 @@ export const MOCK_USDT_ABI = [
     outputs: [{ name: '', type: 'uint8' }],
     stateMutability: 'view',
     type: 'function'
+  },
+  {
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' }
+    ],
+    name: 'allowance',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function'
   }
 ] as const;

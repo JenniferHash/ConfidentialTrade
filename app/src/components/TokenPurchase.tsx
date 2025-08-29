@@ -129,6 +129,32 @@ export const TokenPurchase = () => {
     }
   });
 
+  // Get USDT allowance
+  const { data: usdtAllowance, refetch: refetchAllowance } = useReadContract({
+    address: CONTRACT_ADDRESSES.MOCK_USDT as `0x${string}`,
+    abi: MOCK_USDT_ABI,
+    functionName: 'allowance',
+    args: [address!, CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`],
+    query: {
+      enabled: !!address
+    }
+  });
+
+  // Approve USDT
+  const { writeContract: approveUSDT, data: approveHash, isPending: isApprovePending } = useWriteContract();
+  
+  const { isLoading: isApproveLoading } = useWaitForTransactionReceipt({
+    hash: approveHash,
+  });
+
+  // Handle approve success
+  useEffect(() => {
+    if (approveHash && !isApproveLoading && !isApprovePending) {
+      toast.success('USDT approved successfully!');
+      refetchAllowance();
+    }
+  }, [approveHash, isApproveLoading, isApprovePending]);
+
   // Get user registration status
   const { data: registrationData } = useReadContract({
     address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
@@ -180,6 +206,23 @@ export const TokenPurchase = () => {
     }
   }, [showTokenSelector]);
 
+  const handleApprove = async () => {
+    try {
+      // Approve unlimited USDT (max uint256)
+      const maxAmount = BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff');
+      
+      approveUSDT({
+        address: CONTRACT_ADDRESSES.MOCK_USDT as `0x${string}`,
+        abi: MOCK_USDT_ABI,
+        functionName: 'approve',
+        args: [CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`, maxAmount],
+      });
+    } catch (error) {
+      console.error('Approve failed:', error);
+      toast.error('Approval failed. Please try again.');
+    }
+  };
+
   const handlePurchase = async () => {
     if (!fromAmount || !tokenPrice || parseFloat(fromAmount) <= 0) {
       toast.error('Please enter a valid amount');
@@ -199,17 +242,22 @@ export const TokenPurchase = () => {
       return;
     }
 
+    // Check allowance
+    const requiredAllowance = BigInt(totalCost);
+    if (!usdtAllowance || usdtAllowance < requiredAllowance) {
+      toast.error('Please approve USDT spending first');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await purchaseToken({
+      purchaseToken({
         address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
         abi: CONFIDENTIAL_TRADE_ABI,
         functionName: 'anonymousPurchase',
         args: [selectedToken.address as `0x${string}`, parseUnits(fromAmount, 0)],
       });
       toast.success(`Purchase initiated for ${fromAmount} ${selectedToken.symbol}`);
-      setFromAmount('');
-      setToAmount('');
     } catch (error) {
       console.error('Purchase failed:', error);
       toast.error('Purchase failed. Please try again.');
@@ -220,6 +268,14 @@ export const TokenPurchase = () => {
 
   const rate = tokenPrice ? (1 / (Number(tokenPrice) / 1e6)).toFixed(6) : '0';
   const hasInsufficientBalance = Boolean(usdtBalance && toAmount && parseFloat(toAmount) > Number(usdtBalance) / 1e6);
+  
+  // Check if approval is needed
+  const needsApproval = () => {
+    if (!fromAmount || !tokenPrice) return false;
+    const amount = parseFloat(fromAmount);
+    const totalCost = BigInt(Number(tokenPrice) * amount);
+    return !usdtAllowance || usdtAllowance < totalCost;
+  };
 
   // Debug logs
   console.log('TokenPurchase render:', {
@@ -405,39 +461,73 @@ export const TokenPurchase = () => {
           </div>
         )}
 
-        {/* Swap Button */}
-        <button
-          onClick={handlePurchase}
-          disabled={
-            isLoading || 
-            isPurchasePending || 
-            isPurchaseLoading || 
-            !registrationData?.isRegistered || 
-            !fromAmount || 
-            parseFloat(fromAmount) <= 0 ||
-            hasInsufficientBalance
-          }
-          className={`w-full py-4 rounded-xl font-semibold text-lg transition-all duration-200 ${
-            isLoading || isPurchasePending || isPurchaseLoading || !registrationData?.isRegistered || !fromAmount || parseFloat(fromAmount) <= 0 || hasInsufficientBalance
-              ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-              : 'bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
-          }`}
-        >
-          {isLoading || isPurchasePending || isPurchaseLoading ? (
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              <span>Processing...</span>
-            </div>
-          ) : !registrationData?.isRegistered ? (
-            'Register Proxy Address First'
-          ) : hasInsufficientBalance ? (
-            'Insufficient Balance'
-          ) : !fromAmount || parseFloat(fromAmount) <= 0 ? (
-            'Enter an amount'
-          ) : (
-            'Swap'
-          )}
-        </button>
+        {/* Approve/Swap Buttons */}
+        {needsApproval() && fromAmount && tokenPrice ? (
+          <button
+            onClick={handleApprove}
+            disabled={
+              isApprovePending || 
+              isApproveLoading || 
+              !registrationData?.isRegistered || 
+              !fromAmount || 
+              parseFloat(fromAmount) <= 0 ||
+              hasInsufficientBalance
+            }
+            className={`w-full py-4 rounded-xl font-semibold text-lg transition-all duration-200 ${
+              isApprovePending || isApproveLoading || !registrationData?.isRegistered || !fromAmount || parseFloat(fromAmount) <= 0 || hasInsufficientBalance
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+            }`}
+          >
+            {isApprovePending || isApproveLoading ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Approving...</span>
+              </div>
+            ) : !registrationData?.isRegistered ? (
+              'Register Proxy Address First'
+            ) : hasInsufficientBalance ? (
+              'Insufficient Balance'
+            ) : !fromAmount || parseFloat(fromAmount) <= 0 ? (
+              'Enter an amount'
+            ) : (
+              `Approve USDT`
+            )}
+          </button>
+        ) : (
+          <button
+            onClick={handlePurchase}
+            disabled={
+              isLoading || 
+              isPurchasePending || 
+              isPurchaseLoading || 
+              !registrationData?.isRegistered || 
+              !fromAmount || 
+              parseFloat(fromAmount) <= 0 ||
+              hasInsufficientBalance
+            }
+            className={`w-full py-4 rounded-xl font-semibold text-lg transition-all duration-200 ${
+              isLoading || isPurchasePending || isPurchaseLoading || !registrationData?.isRegistered || !fromAmount || parseFloat(fromAmount) <= 0 || hasInsufficientBalance
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+            }`}
+          >
+            {isLoading || isPurchasePending || isPurchaseLoading ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Processing...</span>
+              </div>
+            ) : !registrationData?.isRegistered ? (
+              'Register Proxy Address First'
+            ) : hasInsufficientBalance ? (
+              'Insufficient Balance'
+            ) : !fromAmount || parseFloat(fromAmount) <= 0 ? (
+              'Enter an amount'
+            ) : (
+              'Swap'
+            )}
+          </button>
+        )}
 
         {/* Info Section */}
         <div className="space-y-2 pt-4 border-t border-white/10">

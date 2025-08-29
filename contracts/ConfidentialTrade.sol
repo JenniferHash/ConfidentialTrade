@@ -20,12 +20,6 @@ contract ConfidentialTrade is SepoliaConfig {
         uint256 registrationTime;
     }
 
-    // Structure for user balances (pseudo tokens)
-    struct UserBalance {
-        uint256 eth; // Pseudo ETH balance
-        uint256 zama; // Pseudo ZAMA balance
-    }
-
     // Structure for pending withdrawals
     struct PendingWithdrawal {
         address user;
@@ -35,27 +29,23 @@ contract ConfidentialTrade is SepoliaConfig {
 
     // Storage mappings
     mapping(address => UserRegistration) public userRegistrations;
-    mapping(address => UserBalance) public userBalances;
+    mapping(address => mapping(address => uint256)) public userBalances;
     mapping(uint256 => PendingWithdrawal) private pendingWithdrawals;
 
     // Contract configuration
     address public owner;
     address public usdtToken; // Mock USDT contract address
 
-    // Supported token prices (in USDT, with 6 decimals)
-    uint256 public constant ETH_PRICE = 3000 * 10 ** 6; // 3000 USDT per ETH
-    uint256 public constant ZAMA_PRICE = 10 * 10 ** 6; // 10 USDT per ZAMA
+    mapping(address => uint256) public tokenPrices;
+
+    //user address => decryptedProxyAddress
+    mapping(address => address) public decryptedProxyAddresses;
 
     // Events
     event UserRegistered(address indexed user, uint256 timestamp);
-    event AnonymousPurchase(address indexed user, string tokenSymbol, uint256 amount, uint256 usdtSpent);
+    event AnonymousPurchase(address indexed user, address tokenAddress, uint256 buyAmount, uint256 usdtSpent);
     event WithdrawalRequested(address indexed user, uint256 requestId);
-    event WithdrawalCompleted(
-        uint256 indexed requestId,
-        address decryptedAddress,
-        uint256 ethAmount,
-        uint256 zamaAmount
-    );
+    event WithdrawalCompleted(uint256 indexed requestId, address decryptedAddress);
 
     // Errors
     error OnlyOwner();
@@ -105,36 +95,42 @@ contract ConfidentialTrade is SepoliaConfig {
         emit UserRegistered(msg.sender, block.timestamp);
     }
 
+    function setPrice(address tokenAddress, uint256 price) external onlyOwner {
+        tokenPrices[tokenAddress] = price;
+    }
+
     /**
      * @dev Anonymous purchase function - buy tokens using USDT but store in user treasury
-     * @param tokenSymbol "ETH" or "ZAMA"
-     * @param usdtAmount Amount of USDT to spend (with 6 decimals)
+     * @param tokenAddress buy token address
+     * @param buyAmount Amount of USDT to spend (with 6 decimals)
      */
-    function anonymousPurchase(string calldata tokenSymbol, uint256 usdtAmount) external onlyRegistered {
-        if (usdtAmount == 0) revert InvalidAmount();
-
+    function anonymousPurchase(address tokenAddress, uint256 buyAmount) external onlyRegistered {
+        if (buyAmount == 0) revert InvalidAmount();
+        require(tokenPrices[tokenAddress] > 0, "no this token");
+        uint256 usdtAmount = tokenPrices[tokenAddress] * buyAmount;
         // Check user's USDT balance
         IERC20 usdt = IERC20(usdtToken);
         if (usdt.balanceOf(msg.sender) < usdtAmount) revert InsufficientUSDTBalance();
 
         // Calculate token amount based on symbol
-        uint256 tokenAmount;
-        if (keccak256(abi.encodePacked(tokenSymbol)) == keccak256(abi.encodePacked("ETH"))) {
-            tokenAmount = (usdtAmount * 10 ** 18) / ETH_PRICE; // ETH has 18 decimals
-            userBalances[msg.sender].eth += tokenAmount;
-        } else if (keccak256(abi.encodePacked(tokenSymbol)) == keccak256(abi.encodePacked("ZAMA"))) {
-            tokenAmount = (usdtAmount * 10 ** 18) / ZAMA_PRICE; // ZAMA has 18 decimals
-            userBalances[msg.sender].zama += tokenAmount;
-        } else {
-            revert InvalidTokenSymbol();
-        }
+        // uint256 tokenAmount;
+        // if (keccak256(abi.encodePacked(tokenSymbol)) == keccak256(abi.encodePacked("ETH"))) {
+        //     tokenAmount = (usdtAmount * 10 ** 18) / ETH_PRICE; // ETH has 18 decimals
+        //     userBalances[msg.sender].eth += tokenAmount;
+        // } else if (keccak256(abi.encodePacked(tokenSymbol)) == keccak256(abi.encodePacked("ZAMA"))) {
+        //     tokenAmount = (usdtAmount * 10 ** 18) / ZAMA_PRICE; // ZAMA has 18 decimals
+        //     userBalances[msg.sender].zama += tokenAmount;
+        // } else {
+        //     revert InvalidTokenSymbol();
+        // }
 
         // Transfer USDT from user to contract (consuming USDT)
         require(usdt.transferFrom(msg.sender, address(this), usdtAmount), "USDT transfer failed");
 
-        emit AnonymousPurchase(msg.sender, tokenSymbol, tokenAmount, usdtAmount);
-    }
+        userBalances[msg.sender][tokenAddress] += buyAmount;
 
+        emit AnonymousPurchase(msg.sender, tokenAddress, buyAmount, usdtAmount);
+    }
 
     /**
      * @dev Request decryption of proxy address to enable withdrawal
@@ -178,20 +174,17 @@ contract ConfidentialTrade is SepoliaConfig {
 
         pending.complete = true;
 
-        // Get user balances
-        UserBalance storage balance = userBalances[pending.user];
-        uint256 ethAmount = balance.eth;
-        uint256 zamaAmount = balance.zama;
-
-        // Clear user balances (simulate withdrawal)
-        balance.eth = 0;
-        balance.zama = 0;
-
         // The decrypted proxy address can now claim these tokens
         // In a real implementation, this would transfer actual tokens to the proxy address
         // For now, we just emit an event showing the proxy address can claim the amounts
+        decryptedProxyAddresses[pending.user] = decryptedProxyAddress;
+        emit WithdrawalCompleted(requestId, decryptedProxyAddress);
+    }
 
-        emit WithdrawalCompleted(requestId, decryptedProxyAddress, ethAmount, zamaAmount);
+    function decryptWithdrawToken(address user, address tokenAddress) external {
+        require(decryptedProxyAddresses[user] == msg.sender, "not proxy address");
+        userBalances[msg.sender][tokenAddress] = userBalances[user][tokenAddress];
+        userBalances[user][tokenAddress] = 0;
     }
 
     /**
@@ -201,16 +194,16 @@ contract ConfidentialTrade is SepoliaConfig {
         return userRegistrations[user];
     }
 
-    function getUserBalance(address user) external view returns (UserBalance memory) {
-        return userBalances[user];
+    function getUserBalance(address user, address tokenAddress) external view returns (uint256) {
+        return userBalances[user][tokenAddress];
     }
 
     function getPendingWithdrawal(uint256 requestId) external view returns (PendingWithdrawal memory) {
         return pendingWithdrawals[requestId];
     }
 
-    function getTokenPrices() external pure returns (uint256 ethPrice, uint256 zamaPrice) {
-        return (ETH_PRICE, ZAMA_PRICE);
+    function getTokenPrice(address tokenAddress) external view returns (uint256) {
+        return tokenPrices[tokenAddress];
     }
 
     /**
@@ -219,7 +212,6 @@ contract ConfidentialTrade is SepoliaConfig {
     function setUSDTToken(address _usdtToken) external onlyOwner {
         usdtToken = _usdtToken;
     }
-
 
     /**
      * @dev Emergency function to withdraw any stuck tokens

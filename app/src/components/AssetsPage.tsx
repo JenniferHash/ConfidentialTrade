@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useAccount, useReadContract } from 'wagmi';
 import { CONTRACT_ADDRESSES, CONFIDENTIAL_TRADE_ABI, MOCK_USDT_ABI } from '../config/contracts';
 
@@ -47,6 +48,7 @@ const TOKENS: Token[] = [
 
 export const AssetsPage = () => {
   const { address } = useAccount();
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Get user registration status
   const { data: registrationData } = useReadContract({
@@ -70,11 +72,26 @@ export const AssetsPage = () => {
     }
   });
 
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold text-white">Assets</h1>
+        <div className="flex items-center justify-center space-x-4">
+          <h1 className="text-2xl font-bold text-white">Assets</h1>
+          <button
+            onClick={handleRefresh}
+            className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center space-x-1"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Refresh</span>
+          </button>
+        </div>
         <p className="text-gray-400 text-sm">Your token holdings</p>
       </div>
 
@@ -107,7 +124,7 @@ export const AssetsPage = () => {
         <div className="divide-y divide-white/10">
           {TOKENS.map((token) => (
             <TokenListItem
-              key={token.symbol}
+              key={`${token.symbol}-${refreshKey}`}
               token={token}
               userAddress={address!}
             />

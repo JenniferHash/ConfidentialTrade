@@ -3,7 +3,7 @@ export const CONTRACT_ADDRESSES = {
   ANONYMOUS_AUTH: '0x8E93aD33bf22CCF3e8e45C87Ff07685D920eFb34',
   AIRDROP: '0x5109E225594b779063B4A268f4E48ed3b366694f',
   SIMPLE_NFT: '0x125E65Ab721f7ee07976301aeC928319186f090E',
-  CONFIDENTIAL_TRADE: '0x4BA20765c7c3F759e9458EF39eFfF6fE522508ce', // Update with deployed address
+  CONFIDENTIAL_TRADE: '0x02d4EaaA28c73f04826D96371218ad08aA2Ca689', // Update with deployed address
   MOCK_USDT: '0x28888c11C48D53D8bBABd06e349a3E37a1b79bcb', // Update with deployed address
 } as const;
 
@@ -258,6 +258,13 @@ export const CONFIDENTIAL_TRADE_ABI = [
   {
     inputs: [],
     name: 'owner',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [{ name: 'proxy', type: 'address' }],
+    name: 'proxyToDecryptMainAddresses',
     outputs: [{ name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function'

@@ -209,7 +209,7 @@ task("confidential-trade:purchase", "Make anonymous purchase of tokens")
 
     // Get token price first
     const tokenPrice = await confidentialTradeContract.getTokenPrice(tokenAddress);
-    const totalCost = tokenPrice * BigInt(amount);
+    const totalCost = tokenPrice * BigInt(amount) / BigInt(10 ** 18);
     
     console.log(`Token price: ${ethers.formatUnits(tokenPrice, 6)} USDT per token`);
     console.log(`Total cost: ${ethers.formatUnits(totalCost, 6)} USDT`);

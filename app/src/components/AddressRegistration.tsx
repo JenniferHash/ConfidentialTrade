@@ -470,34 +470,7 @@ export const AddressRegistration = () => {
         )}
         
         {/* Security Information */}
-        <div className="glass-strong rounded-lg p-6 border border-green-500/30">
-          <div className="flex items-center mb-4">
-            <div className="w-8 h-8 bg-green-400 rounded-lg flex items-center justify-center mr-3">
-              <div className="text-black font-bold">🛡</div>
-            </div>
-            <h3 className="font-cyber font-bold text-green-400">SECURITY_PROTOCOL_DETAILS</h3>
-          </div>
-          
-          <div className="space-y-3 text-sm font-mono text-gray-300">
-            <div className="flex items-start">
-              <span className="text-cyan-400 mr-2">01:</span>
-              <span>ADDRESS_ENCRYPTION → ZAMA_FHE_TECHNOLOGY [QUANTUM_RESISTANT]</span>
-            </div>
-            <div className="flex items-start">
-              <span className="text-purple-400 mr-2">02:</span>
-              <span>ON_CHAIN_STORAGE → BLOCKCHAIN_COMMITMENT [IMMUTABLE_RECORD]</span>
-            </div>
-            <div className="flex items-start">
-              <span className="text-yellow-400 mr-2">03:</span>
-              <span>ACCESS_CONTROL → AUTHORIZED_CONTRACTS_ONLY [ZERO_EXPOSURE]</span>
-            </div>
-            <div className="flex items-start">
-              <span className="text-green-400 mr-2">04:</span>
-              <span>ANONYMOUS_OPERATIONS → SHADOW_IDENTITY_LAYER [TOTAL_PRIVACY]</span>
-            </div>
-          </div>
-        </div>
-
+        
         {/* Privacy Warning */}
         <div className="p-4 border border-yellow-500/30 rounded-lg bg-yellow-400/5">
           <div className="flex items-center space-x-3">

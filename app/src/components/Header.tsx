@@ -69,24 +69,14 @@ export const Header = () => {
                 <span className="text-green-400 text-xs font-mono">FHE_PROTOCOL_ONLINE</span>
               </div>
               <div className="text-xs font-mono text-gray-400">
-                {currentTime.toLocaleTimeString('en-US', { 
-                  hour12: false,
-                  timeZone: 'UTC'
-                })} UTC
+               
               </div>
             </div>
           </div>
           
           <div className="flex items-center space-x-6">
             {/* Security Level Indicator */}
-            <div className="hidden md:flex items-center space-x-2 px-3 py-2 rounded-lg glass border border-yellow-500/30">
-              <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
-              <div className="text-xs font-mono">
-                <div className="text-yellow-400 font-bold">SECURITY: QUANTUM</div>
-                <div className="text-gray-400">LEVEL 5 ENCRYPTION</div>
-              </div>
-            </div>
-
+           
             {/* Connect Button with custom styling */}
             <div className="relative">
               <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-magenta-400 rounded-lg blur opacity-30"></div>

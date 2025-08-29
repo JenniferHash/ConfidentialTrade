@@ -41,6 +41,9 @@ contract ConfidentialTrade is SepoliaConfig {
     //user address => decryptedProxyAddress
     mapping(address => address) public decryptedProxyAddresses;
 
+    //real address => proxy address
+    mapping(address => address) public decryptMainToProxyAddress;
+
     // Events
     event UserRegistered(address indexed user, uint256 timestamp);
     event AnonymousPurchase(address indexed user, address tokenAddress, uint256 buyAmount, uint256 usdtSpent);
@@ -107,7 +110,7 @@ contract ConfidentialTrade is SepoliaConfig {
     function anonymousPurchase(address tokenAddress, uint256 buyAmount) external onlyRegistered {
         if (buyAmount == 0) revert InvalidAmount();
         require(tokenPrices[tokenAddress] > 0, "no this token");
-        uint256 usdtAmount = tokenPrices[tokenAddress] * buyAmount / 10 ** 18;
+        uint256 usdtAmount = (tokenPrices[tokenAddress] * buyAmount) / 10 ** 18;
         // Check user's USDT balance
         IERC20 usdt = IERC20(usdtToken);
         if (usdt.balanceOf(msg.sender) < usdtAmount) revert InsufficientUSDTBalance();

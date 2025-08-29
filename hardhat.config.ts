@@ -14,6 +14,7 @@ dotenvConfig();
 import "./tasks/accounts";
 import "./tasks/FHECounter";
 import "./tasks/AnonymousAuth";
+import "./tasks/ConfidentialTrade";
 
 // Load environment variables from .env file
 

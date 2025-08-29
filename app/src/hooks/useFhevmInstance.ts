@@ -19,8 +19,7 @@ export const useFhevmInstance = () => {
         
         // Create instance with Sepolia config
         const config = {
-          ...SepoliaConfig,
-          network: window.ethereum
+          ...SepoliaConfig
         };
         
         const fhevmInstance = await createInstance(config);

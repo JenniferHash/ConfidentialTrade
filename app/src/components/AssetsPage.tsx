@@ -38,9 +38,9 @@ const TOKENS: Token[] = [
     color: 'from-pink-400 to-purple-400'
   },
   {
-    symbol: 'PEPE',
-    name: 'Pepe',
-    icon: '🐸',
+    symbol: 'DOGE',
+    name: 'Doge',
+    icon: '🐶',
     address: '0x0000000000000000000000000000000000000004',
     decimals: 18,
     color: 'from-yellow-400 to-orange-400'

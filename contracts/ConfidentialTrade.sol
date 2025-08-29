@@ -102,12 +102,12 @@ contract ConfidentialTrade is SepoliaConfig {
     /**
      * @dev Anonymous purchase function - buy tokens using USDT but store in user treasury
      * @param tokenAddress buy token address
-     * @param buyAmount Amount of USDT to spend (with 6 decimals)
+     * @param buyAmount Amount of token to buy
      */
     function anonymousPurchase(address tokenAddress, uint256 buyAmount) external onlyRegistered {
         if (buyAmount == 0) revert InvalidAmount();
         require(tokenPrices[tokenAddress] > 0, "no this token");
-        uint256 usdtAmount = tokenPrices[tokenAddress] * buyAmount;
+        uint256 usdtAmount = tokenPrices[tokenAddress] * buyAmount / 10 ** 18;
         // Check user's USDT balance
         IERC20 usdt = IERC20(usdtToken);
         if (usdt.balanceOf(msg.sender) < usdtAmount) revert InsufficientUSDTBalance();

@@ -65,17 +65,58 @@ export const TokenPurchase = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showTokenSelector, setShowTokenSelector] = useState(false);
   const selectorRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Get token price
+  // Get token price for selected token
   const { data: tokenPrice } = useReadContract({
     address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
     abi: CONFIDENTIAL_TRADE_ABI,
     functionName: 'getTokenPrice',
-    args: [selectedToken.address],
+    args: [selectedToken.address as `0x${string}`],
     query: {
       enabled: !!selectedToken.address
     }
   });
+
+  // Get prices for all tokens in selector
+  const { data: ethPrice } = useReadContract({
+    address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
+    abi: CONFIDENTIAL_TRADE_ABI,
+    functionName: 'getTokenPrice',
+    args: [TOKENS[0].address as `0x${string}`], // ETH
+  });
+
+  const { data: zamaPrice } = useReadContract({
+    address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
+    abi: CONFIDENTIAL_TRADE_ABI,
+    functionName: 'getTokenPrice',
+    args: [TOKENS[1].address as `0x${string}`], // ZAMA
+  });
+
+  const { data: uniPrice } = useReadContract({
+    address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
+    abi: CONFIDENTIAL_TRADE_ABI,
+    functionName: 'getTokenPrice',
+    args: [TOKENS[2].address as `0x${string}`], // UNI
+  });
+
+  const { data: dogePrice } = useReadContract({
+    address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
+    abi: CONFIDENTIAL_TRADE_ABI,
+    functionName: 'getTokenPrice',
+    args: [TOKENS[3].address as `0x${string}`], // DOGE
+  });
+
+  // Helper function to get price for any token
+  const getTokenPrice = (tokenAddress: string) => {
+    switch (tokenAddress) {
+      case TOKENS[0].address: return ethPrice;
+      case TOKENS[1].address: return zamaPrice;
+      case TOKENS[2].address: return uniPrice;
+      case TOKENS[3].address: return dogePrice;
+      default: return undefined;
+    }
+  };
 
   // Get user's USDT balance
   const { data: usdtBalance } = useReadContract({
@@ -110,7 +151,9 @@ export const TokenPurchase = () => {
   useEffect(() => {
     if (fromAmount && tokenPrice && Number(tokenPrice) > 0) {
       const tokenAmount = parseFloat(fromAmount) / (Number(tokenPrice) / 1e6);
-      setToAmount(tokenAmount.toFixed(6));
+      // 如果是小数值（<1），显示6位小数；否则显示2位小数
+      const decimals = tokenAmount < 1 ? 6 : 2;
+      setToAmount(tokenAmount.toFixed(decimals));
     } else if (!fromAmount) {
       setToAmount('');
     }
@@ -119,8 +162,15 @@ export const TokenPurchase = () => {
   // Close token selector when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (selectorRef.current && !selectorRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const clickedOnSelector = selectorRef.current?.contains(target);
+      const clickedOnDropdown = dropdownRef.current?.contains(target);
+      
+      if (!clickedOnSelector && !clickedOnDropdown) {
+        console.log('Clicked outside, closing selector');
         setShowTokenSelector(false);
+      } else {
+        console.log('Clicked inside selector/dropdown, keeping open');
       }
     };
 
@@ -155,7 +205,7 @@ export const TokenPurchase = () => {
         address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
         abi: CONFIDENTIAL_TRADE_ABI,
         functionName: 'anonymousPurchase',
-        args: [selectedToken.address, parseUnits(fromAmount, 0)],
+        args: [selectedToken.address as `0x${string}`, parseUnits(fromAmount, 0)],
       });
       toast.success(`Purchase initiated for ${fromAmount} ${selectedToken.symbol}`);
       setFromAmount('');
@@ -169,7 +219,18 @@ export const TokenPurchase = () => {
   };
 
   const rate = tokenPrice ? (1 / (Number(tokenPrice) / 1e6)).toFixed(6) : '0';
-  const hasInsufficientBalance = usdtBalance && toAmount && parseFloat(toAmount) > Number(usdtBalance) / 1e6;
+  const hasInsufficientBalance = Boolean(usdtBalance && toAmount && parseFloat(toAmount) > Number(usdtBalance) / 1e6);
+
+  // Debug logs
+  console.log('TokenPurchase render:', {
+    selectedToken: selectedToken.symbol,
+    showTokenSelector,
+    tokenPrice: tokenPrice ? Number(tokenPrice) / 1e6 : 'undefined',
+    ethPrice: ethPrice ? Number(ethPrice) / 1e6 : 'undefined',
+    zamaPrice: zamaPrice ? Number(zamaPrice) / 1e6 : 'undefined',
+    uniPrice: uniPrice ? Number(uniPrice) / 1e6 : 'undefined',
+    dogePrice: dogePrice ? Number(dogePrice) / 1e6 : 'undefined',
+  });
 
   return (
     <div className="max-w-md mx-auto space-y-6">
@@ -254,7 +315,11 @@ export const TokenPurchase = () => {
             <div className="absolute right-0 top-0 h-full flex items-center">
               <div 
                 ref={selectorRef}
-                onClick={() => setShowTokenSelector(!showTokenSelector)}
+                onClick={() => {
+                  console.log('Token selector clicked, current state:', showTokenSelector);
+                  setShowTokenSelector(!showTokenSelector);
+                  console.log('Token selector state will be:', !showTokenSelector);
+                }}
                 className="flex items-center space-x-2 bg-white/10 hover:bg-white/15 px-3 py-2 rounded-xl transition-colors cursor-pointer relative"
               >
                 <div className={`w-6 h-6 bg-gradient-to-br ${selectedToken.color} rounded-full flex items-center justify-center text-sm`}>
@@ -268,15 +333,32 @@ export const TokenPurchase = () => {
               
               {/* Token Dropdown */}
               {showTokenSelector && (
-                <div className="absolute top-full right-0 mt-2 w-64 bg-gray-800 border border-white/10 rounded-xl shadow-xl z-50 max-h-64 overflow-y-auto">
+                <div 
+                  ref={dropdownRef}
+                  className="absolute top-full right-0 mt-2 w-64 bg-gray-800 border border-white/10 rounded-xl shadow-xl z-50 max-h-64 overflow-y-auto"
+                  onClick={(e) => {
+                    console.log('Dropdown container clicked');
+                    e.stopPropagation();
+                  }}
+                >
                   {TOKENS.map((token) => (
                     <div
                       key={token.symbol}
-                      onClick={() => {
+                      onClick={(e) => {
+                        console.log('Token clicked:', token.symbol, token.address);
+                        console.log('Event:', e);
+                        e.preventDefault();
+                        e.stopPropagation();
                         setSelectedToken(token);
                         setShowTokenSelector(false);
+                        console.log('Selected token updated to:', token.symbol);
+                      }}
+                      onMouseDown={(e) => {
+                        console.log('Token mousedown:', token.symbol);
+                        e.preventDefault();
                       }}
                       className="flex items-center justify-between p-3 hover:bg-white/5 cursor-pointer transition-colors border-b border-white/5 last:border-b-0"
+                      style={{ pointerEvents: 'all' }}
                     >
                       <div className="flex items-center space-x-3">
                         <div className={`w-8 h-8 bg-gradient-to-br ${token.color} rounded-full flex items-center justify-center text-lg`}>
@@ -288,10 +370,12 @@ export const TokenPurchase = () => {
                         </div>
                       </div>
                       <div className="text-sm text-gray-400">
-                        {tokenPrice && selectedToken.address === token.address ? 
-                          `$${(Number(tokenPrice) / 1e6).toFixed(6)}` : 
-                          '$0.00'
-                        }
+                        {(() => {
+                          const price = getTokenPrice(token.address);
+                          return price && Number(price) > 0 ? 
+                            `$${(Number(price) / 1e6).toFixed(2)}` : 
+                            '$0.00';
+                        })()}
                       </div>
                     </div>
                   ))}

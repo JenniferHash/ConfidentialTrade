@@ -78,27 +78,57 @@ export const AdminPanel = () => {
     setPrices(initialPrices);
   }, []);
 
-  // Fetch current prices
-  useEffect(() => {
-    const fetchPrices = async () => {
-      const newPrices: Record<string, string> = {};
-      
-      for (const token of TOKENS) {
-        try {
-          // You would need to implement individual price fetching here
-          // For now, we'll set them to empty
-          newPrices[token.address] = '';
-        } catch (error) {
-          console.error(`Error fetching price for ${token.symbol}:`, error);
-          newPrices[token.address] = '';
-        }
-      }
-      
-      setPrices(prev => ({ ...prev, ...newPrices }));
-    };
+  // Get current prices for all tokens using individual hooks
+  const ethPrice = useReadContract({
+    address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
+    abi: CONFIDENTIAL_TRADE_ABI,
+    functionName: 'getTokenPrice',
+    args: [TOKENS[0].address as `0x${string}`], // ETH
+  });
 
-    fetchPrices();
-  }, []);
+  const zamaPrice = useReadContract({
+    address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
+    abi: CONFIDENTIAL_TRADE_ABI,
+    functionName: 'getTokenPrice',
+    args: [TOKENS[1].address as `0x${string}`], // ZAMA
+  });
+
+  const uniPrice = useReadContract({
+    address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
+    abi: CONFIDENTIAL_TRADE_ABI,
+    functionName: 'getTokenPrice',
+    args: [TOKENS[2].address as `0x${string}`], // UNI
+  });
+
+  const dogePrice = useReadContract({
+    address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
+    abi: CONFIDENTIAL_TRADE_ABI,
+    functionName: 'getTokenPrice',
+    args: [TOKENS[3].address as `0x${string}`], // DOGE
+  });
+
+  // Store current prices for display
+  const [currentPrices, setCurrentPrices] = useState<Record<string, string>>({});
+
+  // Update current prices when data changes
+  useEffect(() => {
+    const newCurrentPrices: Record<string, string> = {};
+    
+    if (ethPrice.data !== undefined) {
+      newCurrentPrices[TOKENS[0].address] = (Number(ethPrice.data) / 1e6).toFixed(2);
+    }
+    if (zamaPrice.data !== undefined) {
+      newCurrentPrices[TOKENS[1].address] = (Number(zamaPrice.data) / 1e6).toFixed(2);
+    }
+    if (uniPrice.data !== undefined) {
+      newCurrentPrices[TOKENS[2].address] = (Number(uniPrice.data) / 1e6).toFixed(2);
+    }
+    if (dogePrice.data !== undefined) {
+      newCurrentPrices[TOKENS[3].address] = (Number(dogePrice.data) / 1e6).toFixed(2);
+    }
+    
+    setCurrentPrices(newCurrentPrices);
+  }, [ethPrice.data, zamaPrice.data, uniPrice.data, dogePrice.data]);
 
   const handlePriceChange = (tokenAddress: string, price: string) => {
     setPrices(prev => ({
@@ -120,11 +150,11 @@ export const AdminPanel = () => {
       // Convert price to proper format (6 decimals for USDT)
       const priceInWei = parseUnits(price, 6);
       
-      await setTokenPrice({
+      setTokenPrice({
         address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
         abi: CONFIDENTIAL_TRADE_ABI,
         functionName: 'setPrice',
-        args: [token.address, priceInWei],
+        args: [token.address as `0x${string}`, priceInWei],
       });
       
       toast.success(`Price updated for ${token.symbol}`);
@@ -233,7 +263,7 @@ export const AdminPanel = () => {
                 <div className="glass-strong rounded-lg p-3">
                   <div className="text-xs text-gray-400 font-mono uppercase mb-1">Current Price</div>
                   <div className="text-lg font-cyber font-bold text-neon-gold">
-                    Loading... USDT
+                    {currentPrices[token.address] ? `${currentPrices[token.address]} USDT` : 'Loading... USDT'}
                   </div>
                 </div>
                 

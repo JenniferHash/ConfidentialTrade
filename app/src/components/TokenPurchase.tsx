@@ -251,13 +251,18 @@ export const TokenPurchase = () => {
 
     setIsLoading(true);
     try {
+      // Calculate the actual token amount to purchase
+      const tokenAmount = parseFloat(fromAmount) / (Number(tokenPrice) / 1e6);
+      const tokenAmountBigInt = parseUnits(tokenAmount.toString(), 18); // 18 decimals for tokens
+      console.log("tokenAmountBigInt:",fromAmount,tokenPrice,tokenAmount,tokenAmountBigInt);
+      
       purchaseToken({
         address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
         abi: CONFIDENTIAL_TRADE_ABI,
         functionName: 'anonymousPurchase',
-        args: [selectedToken.address as `0x${string}`, parseUnits(fromAmount, 0)],
+        args: [selectedToken.address as `0x${string}`, tokenAmountBigInt],
       });
-      toast.success(`Purchase initiated for ${fromAmount} ${selectedToken.symbol}`);
+      toast.success(`Purchase initiated: ${fromAmount} USDT for ${tokenAmount.toFixed(6)} ${selectedToken.symbol}`);
     } catch (error) {
       console.error('Purchase failed:', error);
       toast.error('Purchase failed. Please try again.');
@@ -278,15 +283,15 @@ export const TokenPurchase = () => {
   };
 
   // Debug logs
-  console.log('TokenPurchase render:', {
-    selectedToken: selectedToken.symbol,
-    showTokenSelector,
-    tokenPrice: tokenPrice ? Number(tokenPrice) / 1e6 : 'undefined',
-    ethPrice: ethPrice ? Number(ethPrice) / 1e6 : 'undefined',
-    zamaPrice: zamaPrice ? Number(zamaPrice) / 1e6 : 'undefined',
-    uniPrice: uniPrice ? Number(uniPrice) / 1e6 : 'undefined',
-    dogePrice: dogePrice ? Number(dogePrice) / 1e6 : 'undefined',
-  });
+  // console.log('TokenPurchase render:', {
+  //   selectedToken: selectedToken.symbol,
+  //   showTokenSelector,
+  //   tokenPrice: tokenPrice ? Number(tokenPrice) / 1e6 : 'undefined',
+  //   ethPrice: ethPrice ? Number(ethPrice) / 1e6 : 'undefined',
+  //   zamaPrice: zamaPrice ? Number(zamaPrice) / 1e6 : 'undefined',
+  //   uniPrice: uniPrice ? Number(uniPrice) / 1e6 : 'undefined',
+  //   dogePrice: dogePrice ? Number(dogePrice) / 1e6 : 'undefined',
+  // });
 
   return (
     <div className="max-w-md mx-auto space-y-6">

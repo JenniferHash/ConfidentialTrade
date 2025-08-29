@@ -5,9 +5,13 @@ import { AddressRegistration } from './AddressRegistration';
 import { NFTVerification } from './NFTVerification';
 import { AirdropClaiming } from './AirdropClaiming';
 import { NFTMinting } from './NFTMinting';
+import { TokenPurchase } from './TokenPurchase';
+import { AdminPanel } from './AdminPanel';
+import { RevealPage } from './RevealPage';
+import { AssetsPage } from './AssetsPage';
 import { formatEther } from 'viem';
 
-type TabType = 'register' | 'verify' | 'airdrop' | 'mint';
+type TabType = 'register' | 'verify' | 'airdrop' | 'mint' | 'purchase' | 'admin' | 'reveal' | 'assets';
 
 export const Dashboard = () => {
   const [activeTab, setActiveTab] = useState<TabType>('register');
@@ -46,6 +50,10 @@ export const Dashboard = () => {
   
   const tabs = [
     { id: 'register', label: 'Register', description: 'Register your shadow address' },
+    { id: 'purchase', label: 'Purchase', description: 'Buy tokens anonymously' },
+    { id: 'assets', label: 'Assets', description: 'View your holdings' },
+    { id: 'reveal', label: 'Reveal', description: 'Reveal proxy address' },
+    { id: 'admin', label: 'Admin', description: 'Manage token prices' },
     { id: 'verify', label: 'Verify NFTs', description: 'Verify NFT ownership' },
     { id: 'airdrop', label: 'Airdrops', description: 'Claim airdrop eligibility' },
     { id: 'mint', label: 'Mint NFT', description: 'Mint test NFTs' }
@@ -55,6 +63,14 @@ export const Dashboard = () => {
     switch (activeTab) {
       case 'register':
         return <AddressRegistration />;
+      case 'purchase':
+        return <TokenPurchase />;
+      case 'assets':
+        return <AssetsPage />;
+      case 'reveal':
+        return <RevealPage />;
+      case 'admin':
+        return <AdminPanel />;
       case 'verify':
         return <NFTVerification />;
       case 'airdrop':
@@ -179,12 +195,12 @@ export const Dashboard = () => {
 
       {/* Navigation Tabs */}
       <div className="border-b border-cyan-500/30 mb-8">
-        <nav className="-mb-px flex space-x-1">
+        <nav className="-mb-px flex flex-wrap gap-1">
           {tabs.map((tab, index) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`relative py-4 px-6 font-cyber text-sm font-bold transition-all duration-300 group ${
+              className={`relative py-3 px-4 font-cyber text-xs font-bold transition-all duration-300 group ${
                 activeTab === tab.id
                   ? 'text-cyan-400 border-b-2 border-cyan-400'
                   : 'text-gray-400 hover:text-cyan-300 border-b-2 border-transparent hover:border-cyan-500/50'
@@ -198,7 +214,7 @@ export const Dashboard = () => {
               
               {/* Tab number */}
               <span className="relative z-10 flex items-center space-x-2">
-                <span className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs ${
+                <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-xs ${
                   activeTab === tab.id 
                     ? 'border-cyan-400 bg-cyan-400/20 text-cyan-400'
                     : 'border-gray-600 bg-gray-800 text-gray-400 group-hover:border-cyan-500 group-hover:text-cyan-300'
@@ -206,8 +222,8 @@ export const Dashboard = () => {
                   {index + 1}
                 </span>
                 <div>
-                  <div className="uppercase tracking-wider">{tab.label}</div>
-                  <div className="text-xs text-gray-500 font-mono normal-case tracking-normal">
+                  <div className="uppercase tracking-wider text-xs">{tab.label}</div>
+                  <div className="text-xs text-gray-500 font-mono normal-case tracking-normal hidden sm:block">
                     {tab.description}
                   </div>
                 </div>

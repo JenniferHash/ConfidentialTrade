@@ -3,6 +3,8 @@ export const CONTRACT_ADDRESSES = {
   ANONYMOUS_AUTH: '0x8E93aD33bf22CCF3e8e45C87Ff07685D920eFb34',
   AIRDROP: '0x5109E225594b779063B4A268f4E48ed3b366694f',
   SIMPLE_NFT: '0x125E65Ab721f7ee07976301aeC928319186f090E',
+  CONFIDENTIAL_TRADE: '0x0000000000000000000000000000000000000000', // Update with deployed address
+  MOCK_USDT: '0x0000000000000000000000000000000000000000', // Update with deployed address
 } as const;
 
 // Sepolia configuration for FHEVM
@@ -159,6 +161,162 @@ export const SIMPLE_NFT_ABI = [
     inputs: [],
     name: 'symbol',
     outputs: [{ name: '', type: 'string' }],
+    stateMutability: 'view',
+    type: 'function'
+  }
+] as const;
+
+export const CONFIDENTIAL_TRADE_ABI = [
+  {
+    inputs: [
+      { name: 'encryptedProxyAddress', type: 'bytes32', internalType: 'externalEaddress' },
+      { name: 'addressProof', type: 'bytes' }
+    ],
+    name: 'registerProxyAddress',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [
+      { name: 'tokenAddress', type: 'address' },
+      { name: 'buyAmount', type: 'uint256' }
+    ],
+    name: 'anonymousPurchase',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [],
+    name: 'requestDecryption',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [
+      { name: 'user', type: 'address' },
+      { name: 'tokenAddress', type: 'address' }
+    ],
+    name: 'decryptWithdrawToken',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [{ name: 'user', type: 'address' }],
+    name: 'getUserRegistration',
+    outputs: [
+      {
+        components: [
+          { name: 'encryptedProxyAddress', type: 'bytes32' },
+          { name: 'isRegistered', type: 'bool' },
+          { name: 'registrationTime', type: 'uint256' }
+        ],
+        name: '',
+        type: 'tuple'
+      }
+    ],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [
+      { name: 'user', type: 'address' },
+      { name: 'tokenAddress', type: 'address' }
+    ],
+    name: 'getUserBalance',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [{ name: 'tokenAddress', type: 'address' }],
+    name: 'getTokenPrice',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [{ name: 'user', type: 'address' }],
+    name: 'decryptedProxyAddresses',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [
+      { name: 'tokenAddress', type: 'address' },
+      { name: 'price', type: 'uint256' }
+    ],
+    name: 'setPrice',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [],
+    name: 'owner',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function'
+  }
+] as const;
+
+export const MOCK_USDT_ABI = [
+  {
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' }
+    ],
+    name: 'mint',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [{ name: 'account', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [
+      { name: 'from', type: 'address' },
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' }
+    ],
+    name: 'transferFrom',
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' }
+    ],
+    name: 'transfer',
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' }
+    ],
+    name: 'approve',
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [],
+    name: 'decimals',
+    outputs: [{ name: '', type: 'uint8' }],
     stateMutability: 'view',
     type: 'function'
   }

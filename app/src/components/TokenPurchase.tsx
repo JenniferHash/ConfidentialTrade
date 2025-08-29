@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAccount, useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseUnits } from 'viem';
 import toast from 'react-hot-toast';
@@ -48,11 +48,23 @@ const TOKENS: Token[] = [
   }
 ];
 
+const USDT_TOKEN = {
+  symbol: 'USDT',
+  name: 'Tether USD',
+  icon: '💵',
+  address: CONTRACT_ADDRESSES.MOCK_USDT,
+  decimals: 6,
+  color: 'from-green-400 to-green-600'
+};
+
 export const TokenPurchase = () => {
   const { address } = useAccount();
   const [selectedToken, setSelectedToken] = useState<Token>(TOKENS[0]);
-  const [buyAmount, setBuyAmount] = useState('');
+  const [fromAmount, setFromAmount] = useState('');
+  const [toAmount, setToAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showTokenSelector, setShowTokenSelector] = useState(false);
+  const selectorRef = useRef<HTMLDivElement>(null);
 
   // Get token price
   const { data: tokenPrice } = useReadContract({
@@ -94,8 +106,32 @@ export const TokenPurchase = () => {
     hash: purchaseHash,
   });
 
+  // Update amounts when user types
+  useEffect(() => {
+    if (fromAmount && tokenPrice) {
+      const cost = parseFloat(fromAmount) * Number(tokenPrice) / 1e6;
+      setToAmount(cost.toFixed(6));
+    } else if (!fromAmount) {
+      setToAmount('');
+    }
+  }, [fromAmount, tokenPrice]);
+
+  // Close token selector when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (selectorRef.current && !selectorRef.current.contains(event.target as Node)) {
+        setShowTokenSelector(false);
+      }
+    };
+
+    if (showTokenSelector) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showTokenSelector]);
+
   const handlePurchase = async () => {
-    if (!buyAmount || !tokenPrice || parseFloat(buyAmount) <= 0) {
+    if (!fromAmount || !tokenPrice || parseFloat(fromAmount) <= 0) {
       toast.error('Please enter a valid amount');
       return;
     }
@@ -105,7 +141,7 @@ export const TokenPurchase = () => {
       return;
     }
 
-    const amount = parseFloat(buyAmount);
+    const amount = parseFloat(fromAmount);
     const totalCost = Number(tokenPrice) * amount;
     
     if (usdtBalance && totalCost > Number(usdtBalance)) {
@@ -119,10 +155,11 @@ export const TokenPurchase = () => {
         address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
         abi: CONFIDENTIAL_TRADE_ABI,
         functionName: 'anonymousPurchase',
-        args: [selectedToken.address, parseUnits(buyAmount, 0)],
+        args: [selectedToken.address, parseUnits(fromAmount, 0)],
       });
-      toast.success(`Purchase initiated for ${buyAmount} ${selectedToken.symbol}`);
-      setBuyAmount('');
+      toast.success(`Purchase initiated for ${fromAmount} ${selectedToken.symbol}`);
+      setFromAmount('');
+      setToAmount('');
     } catch (error) {
       console.error('Purchase failed:', error);
       toast.error('Purchase failed. Please try again.');
@@ -131,220 +168,220 @@ export const TokenPurchase = () => {
     }
   };
 
-  const calculatedCost = buyAmount && tokenPrice ? 
-    (parseFloat(buyAmount) * Number(tokenPrice) / 1e6).toFixed(6) : '0.000000';
+  const rate = tokenPrice ? (1 / (Number(tokenPrice) / 1e6)).toFixed(6) : '0';
+  const hasInsufficientBalance = usdtBalance && toAmount && parseFloat(toAmount) > Number(usdtBalance) / 1e6;
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-md mx-auto space-y-6">
       {/* Header */}
-      <div className="text-center space-y-4">
-        <div className="flex items-center justify-center space-x-3 mb-4">
-          <div className="w-2 h-8 bg-gradient-to-b from-cyan-400 to-magenta-400 rounded-full"></div>
-          <h2 className="text-3xl font-cyber font-bold text-cyan-400">
-            ANONYMOUS TOKEN PURCHASE
-          </h2>
-          <div className="w-2 h-8 bg-gradient-to-b from-magenta-400 to-cyan-400 rounded-full"></div>
-        </div>
-        <p className="text-gray-300 font-mono text-sm">
-          Purchase tokens using USDT • Stored in encrypted treasury • Anonymous operations enabled
-        </p>
+      <div className="text-center space-y-2">
+        <h1 className="text-2xl font-bold text-white">Swap</h1>
+        <p className="text-gray-400 text-sm">Trade tokens in an instant</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Token Selection */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="card-cyber p-6">
-            <h3 className="text-xl font-cyber font-bold text-cyan-400 mb-6 flex items-center">
-              <span className="mr-3">⚡</span>
-              SELECT TOKEN
-            </h3>
+      {/* Swap Card */}
+      <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-6 space-y-4">
+        
+        {/* From Token Input */}
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-400">From</span>
+            <span className="text-gray-400">
+              Balance: {usdtBalance ? `${(Number(usdtBalance) / 1e6).toFixed(6)}` : '0.00'}
+            </span>
+          </div>
+          
+          <div className="relative">
+            <input
+              type="number"
+              value={fromAmount}
+              onChange={(e) => setFromAmount(e.target.value)}
+              placeholder="0.0"
+              className="w-full bg-transparent text-3xl font-semibold text-white placeholder-gray-500 outline-none pr-32"
+              step="any"
+            />
             
-            <div className="grid grid-cols-2 gap-4">
-              {TOKENS.map((token) => (
-                <div
-                  key={token.symbol}
-                  onClick={() => setSelectedToken(token)}
-                  className={`relative p-6 rounded-lg cursor-pointer transition-all duration-300 border-2 ${
-                    selectedToken.symbol === token.symbol
-                      ? 'border-cyan-400 bg-cyan-400/10 scale-105'
-                      : 'border-gray-600 hover:border-cyan-500/50 hover:scale-102'
-                  }`}
-                >
-                  {/* Selection indicator */}
-                  {selectedToken.symbol === token.symbol && (
-                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-cyan-400 rounded-full flex items-center justify-center animate-pulse">
-                      <span className="text-black text-sm font-bold">✓</span>
-                    </div>
-                  )}
-                  
-                  <div className="text-center space-y-3">
-                    <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${token.color} flex items-center justify-center text-2xl font-bold mx-auto animate-pulse`}>
-                      {token.icon}
-                    </div>
-                    <div>
-                      <div className="font-cyber font-bold text-lg text-cyan-400">
-                        {token.symbol}
-                      </div>
-                      <div className="text-sm text-gray-400 font-mono">
-                        {token.name}
-                      </div>
-                    </div>
-                    
-                    {/* Price display */}
-                    <div className="text-xs font-mono">
-                      <span className="text-gray-500">Price: </span>
-                      <span className="text-yellow-400">
-                        {tokenPrice ? `${(Number(tokenPrice) / 1e6).toFixed(6)} USDT` : 'Loading...'}
-                      </span>
-                    </div>
-                  </div>
+            {/* USDT Token Selector (Fixed) */}
+            <div className="absolute right-0 top-0 h-full flex items-center">
+              <div className="flex items-center space-x-2 bg-white/10 hover:bg-white/15 px-3 py-2 rounded-xl transition-colors cursor-not-allowed">
+                <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-sm">
+                  💵
                 </div>
-              ))}
+                <span className="font-medium text-white">USDT</span>
+              </div>
             </div>
           </div>
+          
+          {/* Max Button */}
+          <div className="flex justify-end">
+            <button
+              onClick={() => usdtBalance && setFromAmount((Number(usdtBalance) / 1e6).toString())}
+              className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors px-2 py-1 rounded border border-cyan-400/30 hover:border-cyan-300/50"
+            >
+              MAX
+            </button>
+          </div>
+        </div>
 
-          {/* Purchase Form */}
-          <div className="card-cyber p-6">
-            <h3 className="text-xl font-cyber font-bold text-cyan-400 mb-6 flex items-center">
-              <span className="mr-3">💳</span>
-              PURCHASE DETAILS
-            </h3>
+        {/* Swap Arrow */}
+        <div className="flex justify-center py-2">
+          <div className="w-10 h-10 bg-white/10 hover:bg-white/15 rounded-full flex items-center justify-center cursor-pointer transition-colors group">
+            <svg className="w-5 h-5 text-gray-400 group-hover:text-white transform group-hover:rotate-180 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </div>
+        </div>
+
+        {/* To Token Input */}
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-400">To</span>
+            <span className="text-gray-400">
+              Balance: 0.00
+            </span>
+          </div>
+          
+          <div className="relative">
+            <input
+              type="text"
+              value={toAmount}
+              readOnly
+              placeholder="0.0"
+              className="w-full bg-transparent text-3xl font-semibold text-white placeholder-gray-500 outline-none pr-40"
+            />
             
-            <div className="space-y-6">
-              {/* Amount Input */}
-              <div className="space-y-3">
-                <label className="block text-sm font-mono text-gray-300">
-                  Purchase Amount ({selectedToken.symbol})
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={buyAmount}
-                    onChange={(e) => setBuyAmount(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full bg-black/50 border border-gray-600 rounded-lg px-4 py-3 text-white font-mono focus:outline-none focus:border-cyan-400 transition-colors"
-                    min="0"
-                    step="0.000001"
-                  />
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-cyan-400 font-cyber text-sm">
-                    {selectedToken.symbol}
-                  </div>
-                </div>
-              </div>
-
-              {/* Cost Calculation */}
-              <div className="glass-strong rounded-lg p-4 space-y-3">
-                <div className="flex justify-between items-center font-mono text-sm">
-                  <span className="text-gray-400">Unit Price:</span>
-                  <span className="text-yellow-400">
-                    {tokenPrice ? `${(Number(tokenPrice) / 1e6).toFixed(6)} USDT` : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center font-mono text-sm">
-                  <span className="text-gray-400">Amount:</span>
-                  <span className="text-cyan-400">{buyAmount || '0'} {selectedToken.symbol}</span>
-                </div>
-                <div className="h-px bg-gradient-to-r from-transparent via-gray-600 to-transparent"></div>
-                <div className="flex justify-between items-center font-cyber">
-                  <span className="text-white">Total Cost:</span>
-                  <span className="text-neon-gold text-lg">{calculatedCost} USDT</span>
-                </div>
-              </div>
-
-              {/* Purchase Button */}
-              <button
-                onClick={handlePurchase}
-                disabled={isLoading || isPurchasePending || isPurchaseLoading || !registrationData?.isRegistered}
-                className="w-full btn-primary py-4 text-lg font-cyber font-bold disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+            {/* Token Selector */}
+            <div className="absolute right-0 top-0 h-full flex items-center">
+              <div 
+                ref={selectorRef}
+                onClick={() => setShowTokenSelector(!showTokenSelector)}
+                className="flex items-center space-x-2 bg-white/10 hover:bg-white/15 px-3 py-2 rounded-xl transition-colors cursor-pointer relative"
               >
-                {isLoading || isPurchasePending || isPurchaseLoading ? (
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="w-5 h-5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
-                    <span>PROCESSING...</span>
-                  </div>
-                ) : !registrationData?.isRegistered ? (
-                  'REGISTER PROXY ADDRESS FIRST'
-                ) : (
-                  <>
-                    <span className="relative z-10">EXECUTE ANONYMOUS PURCHASE</span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 to-magenta-400/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
-                  </>
-                )}
-              </button>
+                <div className={`w-6 h-6 bg-gradient-to-br ${selectedToken.color} rounded-full flex items-center justify-center text-sm`}>
+                  {selectedToken.icon}
+                </div>
+                <span className="font-medium text-white">{selectedToken.symbol}</span>
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+              
+              {/* Token Dropdown */}
+              {showTokenSelector && (
+                <div className="absolute top-full right-0 mt-2 w-64 bg-gray-800 border border-white/10 rounded-xl shadow-xl z-50 max-h-64 overflow-y-auto">
+                  {TOKENS.map((token) => (
+                    <div
+                      key={token.symbol}
+                      onClick={() => {
+                        setSelectedToken(token);
+                        setShowTokenSelector(false);
+                      }}
+                      className="flex items-center justify-between p-3 hover:bg-white/5 cursor-pointer transition-colors border-b border-white/5 last:border-b-0"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-8 h-8 bg-gradient-to-br ${token.color} rounded-full flex items-center justify-center text-lg`}>
+                          {token.icon}
+                        </div>
+                        <div>
+                          <div className="font-medium text-white">{token.symbol}</div>
+                          <div className="text-sm text-gray-400">{token.name}</div>
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        {tokenPrice && selectedToken.address === token.address ? 
+                          `$${(Number(tokenPrice) / 1e6).toFixed(6)}` : 
+                          '$0.00'
+                        }
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Account Info Sidebar */}
-        <div className="space-y-6">
-          {/* Registration Status */}
-          <div className="card-cyber p-6">
-            <h3 className="text-lg font-cyber font-bold text-cyan-400 mb-4 flex items-center">
-              <span className="mr-2">🛡️</span>
-              STATUS
-            </h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-400 font-mono text-sm">Registration:</span>
-                <div className={`px-3 py-1 rounded-full text-xs font-mono ${
-                  registrationData?.isRegistered 
-                    ? 'bg-green-400/20 text-green-400 border border-green-400/30' 
-                    : 'bg-red-400/20 text-red-400 border border-red-400/30'
-                }`}>
-                  {registrationData?.isRegistered ? 'ACTIVE' : 'INACTIVE'}
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-gray-400 font-mono text-sm">USDT Balance:</span>
-                <span className="text-yellow-400 font-mono">
-                  {usdtBalance ? `${(Number(usdtBalance) / 1e6).toFixed(6)}` : '0.000000'}
-                </span>
-              </div>
-            </div>
+        {/* Rate Display */}
+        {rate && rate !== '0' && (
+          <div className="text-center text-sm text-gray-400 py-2 border-t border-white/10">
+            1 USDT = {rate} {selectedToken.symbol}
           </div>
+        )}
 
-          {/* Selected Token Info */}
-          <div className="card-cyber p-6">
-            <h3 className="text-lg font-cyber font-bold text-cyan-400 mb-4 flex items-center">
-              <span className="mr-2">📊</span>
-              TOKEN INFO
-            </h3>
-            
-            <div className="text-center space-y-4">
-              <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${selectedToken.color} flex items-center justify-center text-3xl font-bold mx-auto animate-pulse`}>
-                {selectedToken.icon}
-              </div>
-              
-              <div>
-                <div className="font-cyber font-bold text-xl text-cyan-400">
-                  {selectedToken.symbol}
-                </div>
-                <div className="text-sm text-gray-400 font-mono">
-                  {selectedToken.name}
-                </div>
-              </div>
-              
-              <div className="glass-strong rounded-lg p-3">
-                <div className="text-xs text-gray-400 font-mono uppercase">Current Price</div>
-                <div className="text-lg font-cyber font-bold text-neon-gold">
-                  {tokenPrice ? `${(Number(tokenPrice) / 1e6).toFixed(6)} USDT` : 'Loading...'}
-                </div>
-              </div>
-            </div>
+        {/* Error Messages */}
+        {hasInsufficientBalance && (
+          <div className="text-center text-red-400 text-sm py-2">
+            Insufficient USDT balance
           </div>
+        )}
 
-          {/* Security Notice */}
-          <div className="card-cyber p-4 border border-yellow-500/30 bg-yellow-400/5">
-            <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 border border-yellow-400 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-yellow-400 text-sm">!</span>
-              </div>
-              <div className="text-yellow-400 font-mono text-xs leading-relaxed">
-                <div className="font-bold mb-1">SECURITY NOTICE:</div>
-                Purchased tokens are stored in your encrypted treasury and associated with your anonymous proxy address. Use the Reveal function to enable withdrawal.
-              </div>
+        {!registrationData?.isRegistered && (
+          <div className="text-center text-yellow-400 text-sm py-2">
+            Please register your proxy address first
+          </div>
+        )}
+
+        {/* Swap Button */}
+        <button
+          onClick={handlePurchase}
+          disabled={
+            isLoading || 
+            isPurchasePending || 
+            isPurchaseLoading || 
+            !registrationData?.isRegistered || 
+            !fromAmount || 
+            parseFloat(fromAmount) <= 0 ||
+            hasInsufficientBalance
+          }
+          className={`w-full py-4 rounded-xl font-semibold text-lg transition-all duration-200 ${
+            isLoading || isPurchasePending || isPurchaseLoading || !registrationData?.isRegistered || !fromAmount || parseFloat(fromAmount) <= 0 || hasInsufficientBalance
+              ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              : 'bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+          }`}
+        >
+          {isLoading || isPurchasePending || isPurchaseLoading ? (
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <span>Processing...</span>
+            </div>
+          ) : !registrationData?.isRegistered ? (
+            'Register Proxy Address First'
+          ) : hasInsufficientBalance ? (
+            'Insufficient Balance'
+          ) : !fromAmount || parseFloat(fromAmount) <= 0 ? (
+            'Enter an amount'
+          ) : (
+            'Swap'
+          )}
+        </button>
+
+        {/* Info Section */}
+        <div className="space-y-2 pt-4 border-t border-white/10">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-400">Price Impact</span>
+            <span className="text-green-400">≤ 0.01%</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-400">Network Fee</span>
+            <span className="text-gray-300">Gas fee</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-400">Privacy</span>
+            <span className="text-cyan-400">Anonymous</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Security Notice */}
+      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+        <div className="flex items-start space-x-3">
+          <div className="w-5 h-5 border border-yellow-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span className="text-yellow-500 text-xs">!</span>
+          </div>
+          <div className="text-yellow-500 text-sm">
+            <div className="font-semibold mb-1">Anonymous Purchase</div>
+            <div className="text-yellow-400/80">
+              Tokens are stored in your encrypted treasury. Use the Reveal function to withdraw to your wallet.
             </div>
           </div>
         </div>

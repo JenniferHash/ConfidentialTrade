@@ -1,5 +1,5 @@
 import { useAccount, useReadContract } from 'wagmi';
-import { CONTRACT_ADDRESSES, ANONYMOUS_AUTH_ABI } from '../config/contracts';
+import { CONTRACT_ADDRESSES, CONFIDENTIAL_TRADE_ABI } from '../config/contracts';
 
 export const useRegistrationStatus = () => {
   const { address, isConnected } = useAccount();
@@ -10,8 +10,8 @@ export const useRegistrationStatus = () => {
     isLoading,
     refetch,
   } = useReadContract({
-    address: CONTRACT_ADDRESSES.ANONYMOUS_AUTH as `0x${string}`,
-    abi: ANONYMOUS_AUTH_ABI,
+    address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
+    abi: CONFIDENTIAL_TRADE_ABI,
     functionName: 'getUserRegistration',
     args: address ? [address] : undefined,
     query: {
@@ -20,13 +20,13 @@ export const useRegistrationStatus = () => {
   });
 
   // registrationData is now a UserRegistration struct
-  const userReg = registrationData as { encryptedAddress: `0x${string}`; isRegistered: boolean; registrationTime: bigint } | undefined;
+  const userReg = registrationData as { encryptedProxyAddress: `0x${string}`; isRegistered: boolean; registrationTime: bigint } | undefined;
   const isRegistered = userReg ? userReg.isRegistered : false;
   const registrationTimestamp = userReg ? userReg.registrationTime : BigInt(0);
   
-  // encryptedAddress is already a bytes32 hex string
-  const encryptedAddress = userReg && userReg.encryptedAddress !== '0x0000000000000000000000000000000000000000000000000000000000000000' 
-    ? userReg.encryptedAddress 
+  // encryptedProxyAddress is already a bytes32 hex string
+  const encryptedAddress = userReg && userReg.encryptedProxyAddress !== '0x0000000000000000000000000000000000000000000000000000000000000000' 
+    ? userReg.encryptedProxyAddress 
     : null;
 
   return {

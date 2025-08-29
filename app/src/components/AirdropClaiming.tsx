@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { toast } from 'react-hot-toast';
-import { CONTRACT_ADDRESSES, AIRDROP_ABI, ANONYMOUS_AUTH_ABI } from '../config/contracts';
+import { CONTRACT_ADDRESSES, AIRDROP_ABI, CONFIDENTIAL_TRADE_ABI } from '../config/contracts';
 import { formatEther } from 'viem';
 
 interface AirdropInfo {
@@ -18,8 +18,8 @@ export const AirdropClaiming = () => {
   
   // Check if user is registered
   const { data: registrationData } = useReadContract({
-    address: CONTRACT_ADDRESSES.ANONYMOUS_AUTH as `0x${string}`,
-    abi: ANONYMOUS_AUTH_ABI,
+    address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
+    abi: CONFIDENTIAL_TRADE_ABI,
     functionName: 'getUserRegistration',
     args: [address!],
     query: {

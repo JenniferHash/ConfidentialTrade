@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { toast } from 'react-hot-toast';
-import { CONTRACT_ADDRESSES, ANONYMOUS_AUTH_ABI } from '../config/contracts';
+import { CONTRACT_ADDRESSES, CONFIDENTIAL_TRADE_ABI } from '../config/contracts';
 import { useFhevmInstance } from '../hooks/useFhevmInstance';
 import { useRegistrationStatus } from '../hooks/useRegistrationStatus';
 import { useDecryptShadowAddress } from '../hooks/useDecryptShadowAddress';
@@ -94,7 +94,7 @@ export const AddressRegistration = () => {
       // Encrypt the shadow address
       const encrypted = await encryptionUtil.encryptAddress(
         shadowAddress,
-        CONTRACT_ADDRESSES.ANONYMOUS_AUTH,
+        CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE,
         address
       );
       console.log("handleRegister 2");
@@ -103,8 +103,8 @@ export const AddressRegistration = () => {
       
       // Call the contract
       console.log("writeContract config:", {
-        address: CONTRACT_ADDRESSES.ANONYMOUS_AUTH,
-        functionName: 'registerEncryptedAddress',
+        address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE,
+        functionName: 'registerProxyAddress',
         args: [encrypted.handle, encrypted.proof],
         argsLength: [encrypted.handle, encrypted.proof].length,
         handleType: typeof encrypted.handle,
@@ -147,9 +147,9 @@ export const AddressRegistration = () => {
       
       try {
         writeContract({
-          address: CONTRACT_ADDRESSES.ANONYMOUS_AUTH as `0x${string}`,
-          abi: ANONYMOUS_AUTH_ABI,
-          functionName: 'registerEncryptedAddress',
+          address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
+          abi: CONFIDENTIAL_TRADE_ABI,
+          functionName: 'registerProxyAddress',
           args: [formattedHandle as `0x${string}`, formattedProof as `0x${string}`],
         });
         console.log("handleRegister 3 - writeContract called successfully");

@@ -33,13 +33,13 @@ export const useDecryptShadowAddress = (encryptedHandle: string | null) => {
       const handleContractPairs = [
         {
           handle: encryptedHandle,
-          contractAddress: CONTRACT_ADDRESSES.ANONYMOUS_AUTH,
+          contractAddress: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE,
         },
       ];
       
       const startTimeStamp = Math.floor(Date.now() / 1000).toString();
       const durationDays = "10";
-      const contractAddresses = [CONTRACT_ADDRESSES.ANONYMOUS_AUTH];
+      const contractAddresses = [CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE];
 
       // Create EIP712 signature
       const eip712 = instance.createEIP712(

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAccount, useReadContract } from 'wagmi';
-import { CONTRACT_ADDRESSES, ANONYMOUS_AUTH_ABI, AIRDROP_ABI } from '../config/contracts';
+import { CONTRACT_ADDRESSES, CONFIDENTIAL_TRADE_ABI, AIRDROP_ABI } from '../config/contracts';
 import { AddressRegistration } from './AddressRegistration';
 import { NFTVerification } from './NFTVerification';
 import { AirdropClaiming } from './AirdropClaiming';
@@ -19,8 +19,8 @@ export const Dashboard = () => {
   
   // Get user registration status
   const { data: registrationData } = useReadContract({
-    address: CONTRACT_ADDRESSES.ANONYMOUS_AUTH as `0x${string}`,
-    abi: ANONYMOUS_AUTH_ABI,
+    address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
+    abi: CONFIDENTIAL_TRADE_ABI,
     functionName: 'getUserRegistration',
     args: [address!],
     query: {

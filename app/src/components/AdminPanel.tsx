@@ -55,13 +55,7 @@ export const AdminPanel = () => {
     functionName: 'owner',
   });
 
-  // Get current prices for all tokens
-  const tokenPricesQueries = TOKENS.map(token => ({
-    address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
-    abi: CONFIDENTIAL_TRADE_ABI,
-    functionName: 'getTokenPrice',
-    args: [token.address],
-  }));
+  // Note: Token price queries are handled individually below
 
   const { writeContract: setTokenPrice, data: setPriceHash, isPending: isSetPricePending } = useWriteContract();
   

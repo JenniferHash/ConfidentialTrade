@@ -148,7 +148,7 @@ const TokenListItem = ({ token, userAddress }: TokenListItemProps) => {
     address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
     abi: CONFIDENTIAL_TRADE_ABI,
     functionName: 'getUserBalance',
-    args: [userAddress, token.address],
+    args: [userAddress as `0x${string}`, token.address as `0x${string}`],
     query: {
       enabled: !!userAddress
     }
@@ -159,7 +159,7 @@ const TokenListItem = ({ token, userAddress }: TokenListItemProps) => {
     address: CONTRACT_ADDRESSES.CONFIDENTIAL_TRADE as `0x${string}`,
     abi: CONFIDENTIAL_TRADE_ABI,
     functionName: 'getTokenPrice',
-    args: [token.address],
+    args: [token.address as `0x${string}`],
   });
 
   const userBalanceNum = userBalance ? Number(userBalance) / 1e18 : 0; // Convert from wei to token units

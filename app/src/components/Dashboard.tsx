@@ -10,13 +10,13 @@ import { AdminPanel } from './AdminPanel';
 import { RevealPage } from './RevealPage';
 import { AssetsPage } from './AssetsPage';
 import { WithdrawPage } from './WithdrawPage';
-import { formatEther } from 'viem';
+// formatEther import removed - not used
 
 type TabType = 'register' | 'verify' | 'airdrop' | 'mint' | 'purchase' | 'admin' | 'reveal' | 'assets' | 'withdraw';
 
 export const Dashboard = () => {
   const [activeTab, setActiveTab] = useState<TabType>('register');
-  const { address, isConnected } = useAccount();
+  const { address } = useAccount();
   
   // Get user registration status
   const { data: registrationData } = useReadContract({
@@ -34,7 +34,7 @@ export const Dashboard = () => {
   },[registrationData])
 
   // Get total airdrops for user
-  const { data: totalAirdrops } = useReadContract({
+  const { data: _totalAirdrops } = useReadContract({
     address: CONTRACT_ADDRESSES.AIRDROP as `0x${string}`,
     abi: AIRDROP_ABI,
     functionName: 'getUserTotalAirdrops',
@@ -45,7 +45,7 @@ export const Dashboard = () => {
   });
 
   const isRegistered = registrationData?.isRegistered
-  const registrationTime = registrationData?.registrationTime
+  // const registrationTime = registrationData?.registrationTime
 
   console.log("dashboard:",isRegistered);
   

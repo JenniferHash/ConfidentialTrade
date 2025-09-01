@@ -3,13 +3,13 @@ import { useEffect, useState } from 'react';
 
 export const Header = () => {
   const [glitchText, setGlitchText] = useState("CONFIDENTIAL");
-  const [currentTime, setCurrentTime] = useState(new Date());
+  // const [currentTime, setCurrentTime] = useState(new Date());
 
-  useEffect(() => {
-    // Update time every second
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  // useEffect(() => {
+  //   // Update time every second
+  //   const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+  //   return () => clearInterval(timer);
+  // }, []);
 
   useEffect(() => {
     // Glitch effect for title
@@ -91,7 +91,7 @@ export const Header = () => {
       {/* Bottom scan line */}
       <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-magenta-400 to-transparent animate-pulse" style={{animationDelay: '1s'}}></div>
       
-      <style jsx>{`
+      <style>{`
         .mask-hexagon {
           clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
         }

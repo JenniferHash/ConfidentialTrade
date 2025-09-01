@@ -33,7 +33,7 @@ export const RevealPage = () => {
   // Request decryption transaction
   const { writeContract: requestDecryption, data: requestHash, isPending: isRequestPending } = useWriteContract();
   
-  const { isLoading: isRequestLoading, isSuccess: isRequestSuccess } = useWaitForTransactionReceipt({
+  const { isLoading: isRequestLoading } = useWaitForTransactionReceipt({
     hash: requestHash,
   });
 
@@ -154,11 +154,11 @@ export const RevealPage = () => {
                         {registrationData?.isRegistered ? 'ENCRYPTED' : 'NOT_REGISTERED'}
                       </div>
                     </div>
-                    {registrationData?.registrationTime && (
+                    {registrationData?.registrationTime && Number(registrationData.registrationTime) > 0 ? (
                       <div className="mt-3 text-xs text-gray-400 font-mono">
                         Registered: {new Date(Number(registrationData.registrationTime) * 1000).toLocaleDateString()}
                       </div>
-                    )}
+                    ) : null}
                   </div>
 
                   <div className="glass-strong rounded-lg p-6">
@@ -230,7 +230,7 @@ export const RevealPage = () => {
                   <div className="bg-black/50 border border-green-400/30 rounded-lg p-4">
                     <div className="text-xs text-gray-400 font-mono uppercase mb-2">Revealed Proxy Address</div>
                     <div className="text-green-400 font-mono text-lg break-all">
-                      {decryptedProxyAddress}
+                      {decryptedProxyAddress || '0x0000000000000000000000000000000000000000'}
                     </div>
                   </div>
                 </div>

@@ -10,7 +10,7 @@ export const NFTMinting = () => {
   const { address, isConnected } = useAccount();
 
   // Read contract data
-  const { data: totalSupply } = useReadContract({
+  const { data: _totalSupply } = useReadContract({
     address: CONTRACT_ADDRESSES.SIMPLE_NFT as `0x${string}`,
     abi: SIMPLE_NFT_ABI,
     functionName: 'totalSupply',

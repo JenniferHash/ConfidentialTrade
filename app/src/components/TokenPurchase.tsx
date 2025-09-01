@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAccount, useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
-import { parseUnits } from 'viem';
+// parseUnits import removed - not used
 import toast from 'react-hot-toast';
 import { CONTRACT_ADDRESSES, CONFIDENTIAL_TRADE_ABI, MOCK_USDT_ABI } from '../config/contracts';
 
@@ -48,14 +48,7 @@ const TOKENS: Token[] = [
   }
 ];
 
-const USDT_TOKEN = {
-  symbol: 'USDT',
-  name: 'Tether USD',
-  icon: '💵',
-  address: CONTRACT_ADDRESSES.MOCK_USDT,
-  decimals: 6,
-  color: 'from-green-400 to-green-600'
-};
+// USDT_TOKEN definition removed - not used
 
 export const TokenPurchase = () => {
   const { address } = useAccount();

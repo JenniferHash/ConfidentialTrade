@@ -1,4 +1,4 @@
-import { FhevmInstance } from '../types';
+import { FhevmInstance } from '.';
 
 export class EncryptionUtil {
   private instance: FhevmInstance;

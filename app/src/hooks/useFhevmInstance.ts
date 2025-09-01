@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 // import { SEPOLIA_CONFIG } from '../config/contracts';
-import { FhevmInstance } from '../types';
+import { FhevmInstance } from '../utils';
 import { createInstance, SepoliaConfig } from '@zama-fhe/relayer-sdk/bundle';
 import { initSDK } from '@zama-fhe/relayer-sdk/bundle';
 
